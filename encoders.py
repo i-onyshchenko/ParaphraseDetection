@@ -37,20 +37,31 @@ class ParaphraseDetectionModel:
             # Encode text
             tokenized_words1 = [torch.tensor([tokenizer.encode(text=word, add_special_tokens=True)]) for word in words1]
             tokenized_words2 = [torch.tensor([tokenizer.encode(text=word, add_special_tokens=True)]) for word in words2]
+            print("Sentences were successfully tokenized!")
 
             with torch.no_grad():
-                embeddings1 = [model(tok)[0] for tok in tokenized_words1]
-                embeddings2 = [model(tok)[0] for tok in tokenized_words2]
+                embeddings1 = [model(tok)[0][0] for tok in tokenized_words1]
+                embeddings2 = [model(tok)[0][0] for tok in tokenized_words2]
+                print("Embeddings were successfully created!")
 
-            self.eval_model(embeddings1, embeddings2, labels)
+                self.eval_model(embeddings1, embeddings2, labels)
+                print("Model {} was successfully evaluated!".format(pretrained_weights))
 
     def eval_model(self, tokens1, tokens2, labels):
-        ziped_tokens = zip(tokens1, tokens2)
-        predictions = [self.detect(tok[0], tok[1]) for tok in ziped_tokens]
+        predictions = [self.detect(tokens1[i], tokens2[i]) for i in range(len(labels))]
+        # print("Predictions: ", predictions)
+        # print("Labels:      ", labels)
         print(metrics.classification_report(labels, predictions))
 
     def detect(self, bag1, bag2):
-        return 0
+        avg1 = bag1.mean(axis=0)
+        avg2 = bag2.mean(axis=0)
+        norm1 = avg1.pow(2).sum().sqrt()
+        norm2 = avg2.pow(2).sum().sqrt()
+        # dist = (avg1 - avg2).pow(2).sum().sqrt()
+        cos_dist = avg1.dot(avg2) / norm1 / norm2
+        # print("Distance: ", cos_dist)
+        return 1 if cos_dist > 0.92 else 0
 
 
 if __name__ == "__main__":
