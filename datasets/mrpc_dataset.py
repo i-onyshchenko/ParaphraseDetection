@@ -1,4 +1,4 @@
-class DataSet:
+class PreMRPCDataSet:
     def __init__(self, filename, type):
         self.type = type
         self.pairs = None
@@ -17,6 +17,7 @@ class DataSet:
         self.size = len(self.labels)
         self.pos_count = self.labels.count(1)
         self.neg_count = self.size - self.pos_count
+        # pos_indexes = filter(lambda i: self.labels[i] == 1, range(self.size))
         print("Number of {} pairs: {}, positive: {}, negative {}".format(self.type, self.size, self.pos_count, self.neg_count))
 
     @property
@@ -30,13 +31,13 @@ class DataSet:
 
 class MRPCDataSet:
     def __init__(self, train_filename=None, test_filename=None):
-        self.train_data_set = DataSet(train_filename, "train") if train_filename is not None else None
-        self.test_data_set = DataSet(test_filename, "test") if test_filename is not None else None
+        self.train_data_set = PreMRPCDataSet(train_filename, "train") if train_filename is not None else None
+        self.test_data_set = PreMRPCDataSet(test_filename, "test") if test_filename is not None else None
 
     @property
-    def get_train_dataset(self):
+    def train_dataset(self):
         return self.train_data_set
 
     @property
-    def get_test_dataset(self):
+    def test_dataset(self):
         return self.test_data_set

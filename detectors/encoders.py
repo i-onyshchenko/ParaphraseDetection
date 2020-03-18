@@ -1,12 +1,17 @@
 import torch
 from transformers import *
-from mrpc_dataset import MRPCDataSet
 from sklearn import metrics
+
+from datasets.mrpc_dataset import MRPCDataSet
+from detectors.algos import DETECTORS
+
+import os
+import datetime
 
 # Transformers has a unified API
 # for 10 transformer architectures and 30 pretrained weights.
-#          Model          | Tokenizer          | Pretrained weights shortcut
 # To use TensorFlow 2.0 versions of the models, simply prefix the class names with 'TF', e.g. `TFRobertaModel` is the TF 2.0 counterpart of the PyTorch model `RobertaModel`
+#          Model          | Tokenizer          | Pretrained weights shortcut
 
 MODELS = [(BertModel,       BertTokenizer,       'bert-base-uncased'),
           (OpenAIGPTModel,  OpenAIGPTTokenizer,  'openai-gpt'),
@@ -20,6 +25,12 @@ MODELS = [(BertModel,       BertTokenizer,       'bert-base-uncased'),
           (XLMRobertaModel, XLMRobertaTokenizer, 'xlm-roberta-base'),
          ]
 
+THRESHOLDS = {
+                'bert-base-uncased': 0.9,
+                'openai-gpt': 0.87,
+                'gpt2': 0.9985
+             }
+
 
 class ParaphraseDetectionModel:
     def __init__(self):
@@ -29,14 +40,15 @@ class ParaphraseDetectionModel:
         # Let's encode some text in a sequence of hidden-states using each model:
         unziped = list(zip(*pairs))
         words1, words2 = unziped[0], unziped[1]
+        report_file = open(os.path.join('logs', list(DETECTORS.keys())[0] + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.txt'), mode="w")
         for model_class, tokenizer_class, pretrained_weights in MODELS[:1]:
             # Load pretrained model/tokenizer
             tokenizer = tokenizer_class.from_pretrained(pretrained_weights)
             model = model_class.from_pretrained(pretrained_weights)
 
             # Encode text
-            tokenized_words1 = [torch.tensor([tokenizer.encode(text=word, add_special_tokens=True)]) for word in words1]
-            tokenized_words2 = [torch.tensor([tokenizer.encode(text=word, add_special_tokens=True)]) for word in words2]
+            tokenized_words1 = [torch.tensor([tokenizer.encode(text=word, add_special_tokens=True, add_space_before_punct_symbol=True)]) for word in words1]
+            tokenized_words2 = [torch.tensor([tokenizer.encode(text=word, add_special_tokens=True, add_space_before_punct_symbol=True)]) for word in words2]
             print("Sentences were successfully tokenized!")
 
             with torch.no_grad():
@@ -44,29 +56,36 @@ class ParaphraseDetectionModel:
                 embeddings2 = [model(tok)[0][0] for tok in tokenized_words2]
                 print("Embeddings were successfully created!")
 
-                self.eval_model(embeddings1, embeddings2, labels)
-                print("Model {} was successfully evaluated!".format(pretrained_weights))
+                report = self.eval_model(DETECTORS['mean_phrase'], embeddings1, embeddings2, labels, pretrained_weights)
+                report_file.write("Model {}\n".format(pretrained_weights))
+                report_file.write(report)
+                report_file.write("\n\n")
+                print(report)
+                print("Model {} was successfully evaluated!\n".format(pretrained_weights))
 
-    def eval_model(self, tokens1, tokens2, labels):
-        predictions = [self.detect(tokens1[i], tokens2[i]) for i in range(len(labels))]
-        # print("Predictions: ", predictions)
+        report_file.close()
+
+    def eval_model(self, detector, tokens1, tokens2, labels, model_name):
+        predictions = [detector(tokens1[i], tokens2[i], THRESHOLDS.get(model_name, 0.9)) for i in range(len(labels))]
         # print("Labels:      ", labels)
-        print(metrics.classification_report(labels, predictions))
-
-    def detect(self, bag1, bag2):
-        avg1 = bag1.mean(axis=0)
-        avg2 = bag2.mean(axis=0)
-        norm1 = avg1.pow(2).sum().sqrt()
-        norm2 = avg2.pow(2).sum().sqrt()
-        # dist = (avg1 - avg2).pow(2).sum().sqrt()
-        cos_dist = avg1.dot(avg2) / norm1 / norm2
-        # print("Distance: ", cos_dist)
-        return 1 if cos_dist > 0.92 else 0
+        # print("Predictions: ", predictions)
+        return metrics.classification_report(labels, predictions)
 
 
 if __name__ == "__main__":
     model = ParaphraseDetectionModel()
-    data_set = MRPCDataSet(test_filename='MRPC/msr_paraphrase_test.txt')
-    test_set = data_set.get_test_dataset
+    data_set = MRPCDataSet(test_filename='datasets/MRPC/msr_paraphrase_test.txt')
+    test_set = data_set.test_dataset
     if test_set is not None:
         model.evaluate(test_set.get_pairs, test_set.get_labels)
+
+
+
+
+
+
+
+
+
+
+
