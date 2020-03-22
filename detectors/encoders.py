@@ -1,12 +1,14 @@
 import torch
 from transformers import *
 from sklearn import metrics
+import numpy as np
 
 from datasets.mrpc_dataset import MRPCDataSet
 from detectors.algos import DETECTORS
 
 import os
 import datetime
+import time
 
 # Transformers has a unified API
 # for 10 transformer architectures and 30 pretrained weights.
@@ -26,7 +28,7 @@ MODELS = [(BertModel,       BertTokenizer,       'bert-base-uncased'),
          ]
 
 THRESHOLDS = {
-                'bert-base-uncased': 0.9,
+                'bert-base-uncased': 0.95,
                 'openai-gpt': 0.87,
                 'gpt2': 0.9985
              }
@@ -36,11 +38,13 @@ class ParaphraseDetectionModel:
     def __init__(self):
         pass
 
-    def evaluate(self, pairs=None, labels=None):
+    def evaluate(self, pairs=None, labels=None, verbose=False):
         # Let's encode some text in a sequence of hidden-states using each model:
+        t_start = time.clock()
         unziped = list(zip(*pairs))
         words1, words2 = unziped[0], unziped[1]
-        report_file = open(os.path.join('logs', list(DETECTORS.keys())[0] + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.txt'), mode="w")
+        if verbose:
+            report_file = open(os.path.join('logs', list(DETECTORS.keys())[1] + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.txt'), mode="w")
         for model_class, tokenizer_class, pretrained_weights in MODELS[:1]:
             # Load pretrained model/tokenizer
             tokenizer = tokenizer_class.from_pretrained(pretrained_weights)
@@ -56,36 +60,26 @@ class ParaphraseDetectionModel:
                 embeddings2 = [model(tok)[0][0] for tok in tokenized_words2]
                 print("Embeddings were successfully created!")
 
-                report = self.eval_model(DETECTORS['mean_phrase'], embeddings1, embeddings2, labels, pretrained_weights)
-                report_file.write("Model {}\n".format(pretrained_weights))
-                report_file.write(report)
-                report_file.write("\n\n")
+                report = self.eval_model(DETECTORS['pairs_matcher'], embeddings1, embeddings2, labels, pretrained_weights)
+                if verbose:
+                    report_file.write("Model {}\n".format(pretrained_weights))
+                    report_file.write(report)
+                    report_file.write("\n\n")
                 print(report)
                 print("Model {} was successfully evaluated!\n".format(pretrained_weights))
 
-        report_file.close()
+        if verbose:
+            report_file.close()
+        print("Time elapsed: ", time.clock() - t_start)
 
     def eval_model(self, detector, tokens1, tokens2, labels, model_name):
-        predictions = [detector(tokens1[i], tokens2[i], THRESHOLDS.get(model_name, 0.9)) for i in range(len(labels))]
-        # print("Labels:      ", labels)
-        # print("Predictions: ", predictions)
+        predictions = detector(tokens1, tokens2, THRESHOLDS.get(model_name, 0.9))
         return metrics.classification_report(labels, predictions)
 
 
 if __name__ == "__main__":
     model = ParaphraseDetectionModel()
-    data_set = MRPCDataSet(test_filename='datasets/MRPC/msr_paraphrase_test.txt')
+    data_set = MRPCDataSet(test_filename='datasets/MRPC/msr_paraphrase_train.txt')
     test_set = data_set.test_dataset
     if test_set is not None:
-        model.evaluate(test_set.get_pairs, test_set.get_labels)
-
-
-
-
-
-
-
-
-
-
-
+        model.evaluate(test_set.get_pairs, test_set.get_labels, verbose=True)

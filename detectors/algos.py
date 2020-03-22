@@ -1,31 +1,60 @@
-def mean_phrase(bag1, bag2, threshold):
+import torch
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+
+
+def mean_phrase(batch_bag1, batch_bag2, threshold):
     """
     Compute Cosine distance between means of bags
-    :param bag1:
-    :param bag2:
+    :param batch_bag1: list of tensors, size (batch_size, num_of_features)
+    :param batch_bag2:
     :param threshold:
     :return: 1 if is paraphrase, else 0
     """
-    avg1 = bag1.mean(axis=0)
-    avg2 = bag2.mean(axis=0)
-    norm1 = avg1.pow(2).sum().sqrt()
-    norm2 = avg2.pow(2).sum().sqrt()
-    # dist = (avg1 - avg2).pow(2).sum().sqrt()
-    cos_dist = avg1.dot(avg2) / norm1 / norm2
-    # print("Distance: ", cos_dist)
-    return 1 if cos_dist > threshold else 0
+    batch_avg1 = [entry.mean(axis=0) for entry in batch_bag1]
+    batch_avg2 = [entry.mean(axis=0) for entry in batch_bag2]
+    cos_dists = [cosine_similarity([np.array(batch_avg1[i])], [np.array(batch_avg2[i])]) for i in range(len(batch_avg1))]
+    return [1 if dist > threshold else 0 for dist in cos_dists]
 
 
-def pairs_matcher(bag1, bag2, threshold):
+def pairs_matcher(batch_bag1, batch_bag2, threshold):
     """
     Computes pair-wise similarity between words in bags
-    :param bag1:
-    :param bag2:
+    :param batch_bag1: list of tensors, size (batch_size, num_of_features)
+    :param batch_bag2:
     :param threshold:
     :return: 1 if is paraphrase, else 0
     """
-    pass
+    batch_bag1 = [bag for bag in batch_bag1]
+    batch_bag2 = [bag for bag in batch_bag2]
+
+    cos_dists = [cosine_similarity(bag1, bag2) for (bag1, bag2) in zip(batch_bag1, batch_bag2)]
+
+    preds = []
+    # counts number of close pairs
+    # for dist in cos_dists:
+    #     m, n = np.shape(dist)
+    #
+    #     max_per_row = np.max(dist, axis=1)
+    #     max_per_col = np.max(dist, axis=0)
+    #
+    #     matches_in_row = np.count_nonzero(max_per_row > threshold)
+    #     matches_in_col = np.count_nonzero(max_per_col > threshold)
+    #
+    #     preds.append(matches_in_row + matches_in_col > 0.6*(m+n))
+
+    for dist in cos_dists:
+        m, n = np.shape(dist)
+
+        max_per_row = set(np.max(dist, axis=1))
+        max_per_col = set(np.max(dist, axis=0))
+
+        preds.append(len(max_per_row.intersection(max_per_col)) > 0.7*min(m, n))
+
+    return preds
+
 
 DETECTORS = {
     "mean_phrase": mean_phrase,
+    "pairs_matcher": pairs_matcher,
 }
