@@ -9,7 +9,7 @@ def mean_phrase(batch_bag1, batch_bag2, threshold):
     :param batch_bag1: list of tensors, size (batch_size, num_of_features)
     :param batch_bag2:
     :param threshold:
-    :return: 1 if is paraphrase, else 0
+    :return: [1 if is paraphrase, else 0 for each entry]
     """
     batch_avg1 = [entry.mean(axis=0) for entry in batch_bag1]
     batch_avg2 = [entry.mean(axis=0) for entry in batch_bag2]
@@ -23,7 +23,7 @@ def pairs_matcher(batch_bag1, batch_bag2, threshold):
     :param batch_bag1: list of tensors, size (batch_size, num_of_features)
     :param batch_bag2:
     :param threshold:
-    :return: 1 if is paraphrase, else 0
+    :return: [1 if is paraphrase, else 0 for each entry]
     """
     batch_bag1 = [bag for bag in batch_bag1]
     batch_bag2 = [bag for bag in batch_bag2]
@@ -54,7 +54,20 @@ def pairs_matcher(batch_bag1, batch_bag2, threshold):
     return preds
 
 
+def dependency_checker(batch_sent1, batch_sent2, batch_vect1, batch_vect2, threshold):
+    """
+    :param batch_sent1: batch of sentences
+    :param batch_sent2: batch of sentences
+    :param batch_vect1: batch of vectors
+    :param batch_vect2: batch of vectors
+    :param threshold:
+    :return: [1 if is paraphrase, else 0 for each entry]
+    """
+    pass
+
+
 DETECTORS = {
     "mean_phrase": mean_phrase,
     "pairs_matcher": pairs_matcher,
+    "dependency_checker": dependency_checker
 }
