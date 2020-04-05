@@ -29,7 +29,7 @@ MODELS = [(BertModel,       BertTokenizer,       'bert-base-uncased'),
          ]
 
 THRESHOLDS = {
-                'bert-base-uncased': 0.95,
+                'bert-base-uncased': 0.90,
                 'openai-gpt': 0.87,
                 'gpt2': 0.9985
              }
@@ -43,7 +43,7 @@ class ParaphraseDetectionModel:
         """
         :param tokenizer:
         :param sents:
-        :return: indexes of valid words and tokenized sentence
+        :return: indexes of valid words, tokenized sentence and dependency tree
         """
         nlp = spacy.load('en_core_web_sm')
         mod_sents = [nlp(sent) for sent in sents]
@@ -57,15 +57,18 @@ class ParaphraseDetectionModel:
             offset = 0
             for j in range(len(sent)):
                 size = len(sent[j])
-                if mod_sents[i][j].dep_ != 'punct':
-                    index.append(offset + size - 1)
-                    offset += size
-                else:
-                    offset += 1
+                # throw away punctuations
+                # if mod_sents[i][j].dep_ != 'punct':
+                #     index.append(offset + size - 1)
+                #     offset += size
+                # else:
+                #     offset += 1
+                index.append(offset + size - 1)
+                offset += size
 
             indexes.append(index)
 
-        return indexes, concat_tokenized_sents
+        return indexes, concat_tokenized_sents, mod_sents
 
     def evaluate(self, pairs=None, labels=None, verbose=False):
         # Let's encode some text in a sequence of hidden-states using each model:
@@ -73,7 +76,7 @@ class ParaphraseDetectionModel:
         unziped = list(zip(*pairs))
         sents1, sents2 = unziped[0], unziped[1]
         if verbose:
-            report_file = open(os.path.join('logs', list(DETECTORS.keys())[1] + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.txt'), mode="w")
+            report_file = open(os.path.join('logs', list(DETECTORS.keys())[2] + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.txt'), mode="w")
         for model_class, tokenizer_class, pretrained_weights in MODELS[:1]:
             # Load pretrained model/tokenizer
             tokenizer = tokenizer_class.from_pretrained(pretrained_weights)
@@ -84,8 +87,8 @@ class ParaphraseDetectionModel:
             # tokenized_sents2 = [torch.tensor([tokenizer.encode(text=sent, add_special_tokens=True, add_space_before_punct_symbol=True)]) for sent in sents2]
             print("Sentences were successfully tokenized!")
 
-            selected_indexes1, tokenized_sents1 = self.selectWords(tokenizer, sents1)
-            selected_indexes2, tokenized_sents2 = self.selectWords(tokenizer, sents2)
+            selected_indexes1, tokenized_sents1, dep_trees1 = self.selectWords(tokenizer, sents1)
+            selected_indexes2, tokenized_sents2, dep_trees2 = self.selectWords(tokenizer, sents2)
 
             with torch.no_grad():
                 embeddings1 = [model(tok)[0][0] for tok in tokenized_sents1]
@@ -96,7 +99,7 @@ class ParaphraseDetectionModel:
                 embeddings1 = [embeddings1[i][1:-1][selected_indexes1[i]] for i in range(len(embeddings1))]
                 embeddings2 = [embeddings2[i][1:-1][selected_indexes2[i]] for i in range(len(embeddings2))]
 
-                report = self.eval_model(DETECTORS['pairs_matcher'], embeddings1, embeddings2, labels, pretrained_weights)
+                report = self.eval_model(DETECTORS['dependency_checker'], embeddings1, embeddings2, labels, pretrained_weights, dep_trees1=dep_trees1, dep_trees2=dep_trees2)
                 if verbose:
                     report_file.write("Model {}\n".format(pretrained_weights))
                     report_file.write(report)
@@ -108,8 +111,8 @@ class ParaphraseDetectionModel:
             report_file.close()
         print("Time elapsed: ", time.clock() - t_start)
 
-    def eval_model(self, detector, tokens1, tokens2, labels, model_name):
-        predictions = detector(tokens1, tokens2, THRESHOLDS.get(model_name, 0.9))
+    def eval_model(self, detector, tokens1, tokens2, labels, model_name, **kwargs):
+        predictions = detector(tokens1, tokens2, THRESHOLDS.get(model_name, 0.9), dep_trees1=kwargs.get("dep_trees1", None), dep_trees2=kwargs.get("dep_trees2", None))
         return metrics.classification_report(labels, predictions)
 
 

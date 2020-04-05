@@ -49,21 +49,45 @@ def pairs_matcher(batch_bag1, batch_bag2, threshold):
         max_per_row = set(np.max(dist, axis=1))
         max_per_col = set(np.max(dist, axis=0))
 
-        preds.append(len(max_per_row.intersection(max_per_col)) > 0.7*min(m, n))
+        preds.append(len(max_per_row.intersection(max_per_col)) > threshold*min(m, n))
 
     return preds
 
 
-def dependency_checker(batch_sent1, batch_sent2, batch_vect1, batch_vect2, threshold):
+def dependency_checker(batch_vect1, batch_vect2, threshold, dep_trees1=None, dep_trees2=None):
     """
-    :param batch_sent1: batch of sentences
-    :param batch_sent2: batch of sentences
     :param batch_vect1: batch of vectors
     :param batch_vect2: batch of vectors
     :param threshold:
+    :param dep_trees1:
+    :param dep_trees2
     :return: [1 if is paraphrase, else 0 for each entry]
     """
-    pass
+    preds = []
+    for i in range(len(batch_vect1)):
+        sent1 = batch_vect1[i]
+        sent2 = batch_vect2[i]
+        tree1 = dep_trees1[i]
+        tree2 = dep_trees2[i]
+
+        # cos_dists = cosine_similarity(sent1, sent2)
+        # neighbours1 = [[token.head.i] + [child.i for child in list(token.children)] for token in tree1 if token.dep_ != 'punct']
+        neighbours1 = [[token.i, token.head.i] + [child.i for child in list(token.children)] for token in tree1 if token.dep_ != 'punct']
+        neighbours2 = [[token.i, token.head.i] + [child.i for child in list(token.children)] for token in tree2 if token.dep_ != 'punct']
+
+        context_bags1 = [np.mean(sent1[indexes].numpy(), axis=0) for indexes in neighbours1]
+        context_bags2 = [np.mean(sent2[indexes].numpy(), axis=0) for indexes in neighbours2]
+
+        similarity = pairs_matcher([context_bags1], [context_bags2], 0.5)
+
+        preds += similarity
+
+    return preds
+
+
+
+
+
 
 
 DETECTORS = {
