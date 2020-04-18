@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
 
-def mean_phrase(batch_bag1, batch_bag2, threshold):
+def mean_phrase(batch_bag1, batch_bag2, threshold, **kwargs):
     """
     Compute Cosine distance between means of bags
     :param batch_bag1: list of tensors, size (batch_size, num_of_features)
@@ -17,7 +17,7 @@ def mean_phrase(batch_bag1, batch_bag2, threshold):
     return [1 if dist > threshold else 0 for dist in cos_dists]
 
 
-def pairs_matcher(batch_bag1, batch_bag2, threshold):
+def pairs_matcher(batch_bag1, batch_bag2, threshold, **kwargs):
     """
     Computes pair-wise similarity between words in bags
     :param batch_bag1: list of tensors, size (batch_size, num_of_features)
@@ -46,10 +46,13 @@ def pairs_matcher(batch_bag1, batch_bag2, threshold):
     for dist in cos_dists:
         m, n = np.shape(dist)
 
-        max_per_row = set(np.max(dist, axis=1))
-        max_per_col = set(np.max(dist, axis=0))
+        max_per_row = zip(range(m), np.argmax(dist, axis=1))
+        max_per_col = zip(np.argmax(dist, axis=0), range(n))
 
-        preds.append(len(max_per_row.intersection(max_per_col)) > threshold*min(m, n))
+        max_per_row = set([elem for elem in max_per_row if dist[elem[0], elem[1]] > threshold])
+        max_per_col = set([elem for elem in max_per_col if dist[elem[0], elem[1]] > threshold])
+
+        preds.append(len(max_per_row.intersection(max_per_col)) > 0.7*min(m, n))
 
     return preds
 
@@ -78,16 +81,11 @@ def dependency_checker(batch_vect1, batch_vect2, threshold, dep_trees1=None, dep
         context_bags1 = [np.mean(sent1[indexes].numpy(), axis=0) for indexes in neighbours1]
         context_bags2 = [np.mean(sent2[indexes].numpy(), axis=0) for indexes in neighbours2]
 
-        similarity = pairs_matcher([context_bags1], [context_bags2], 0.5)
+        similarity = pairs_matcher([context_bags1], [context_bags2], threshold)
 
         preds += similarity
 
     return preds
-
-
-
-
-
 
 
 DETECTORS = {

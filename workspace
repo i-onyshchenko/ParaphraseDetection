@@ -15,7 +15,9 @@ pair_th  set_th  acc/f1
 0.87     0.75    0.70/0.81
 
 # after adding spacy
+------
 0.95     0.7     0.74/0.82
+------
 0.95     0.85    0.62/0.66
 0.92     0.68    0.73/0.82
 0.95     0.75    0.72/0.79
@@ -61,3 +63,38 @@ pair_th  set_th  acc/f1
 0.60             0.70/0.78
 0.45             0.70/0.81
 0.5              0.71/0.81
+
+# BERT with additional thresh for pairs, fixed set tresh
+set     word     acc/f1
+0.1     0.9      0.69/0.80
+0.5     0.75     0.72/0.82
+0.7     Max F1-score = 0.819 (accuracy = 0.741) at threshold 0.57
+        Max Accuracy = 0.741 (f1-score = 0.819) at threshold 0.57
+0.8     Max F1-score = 0.747 (accuracy = 0.688) at threshold 0.38
+        Max Accuracy = 0.689 (f1-score = 0.747) at threshold 0.46
+0.6     Max F1-score = 0.747 (accuracy = 0.688) at threshold 0.38
+        Max Accuracy = 0.689 (f1-score = 0.747) at threshold 0.46
+0.65    Max F1-score = 0.822 (accuracy = 0.733) at threshold 0.59
+        Max Accuracy = 0.737 (f1-score = 0.817) at threshold 0.66
+0.72    Max F1-score = 0.822 (accuracy = 0.733) at threshold 0.59
+        Max Accuracy = 0.737 (f1-score = 0.817) at threshold 0.66
+
+# XLNet with additional thresh for pairs, fixed set tresh
+0.7     Max F1-score = 0.581 (accuracy = 0.576) at threshold 0.92
+        Max Accuracy = 0.576 (f1-score = 0.581) at threshold 0.92
+0.25    Max F1-score = 0.799 (accuracy = 0.678) at threshold 0.95
+        Max Accuracy = 0.679 (f1-score = 0.791) at threshold 0.98
+0.1     Max F1-score = 0.799 (accuracy = 0.678) at threshold 0.95
+        Max Accuracy = 0.679 (f1-score = 0.791) at threshold 0.98
+0.2     Max F1-score = 0.799 (accuracy = 0.671) at threshold 0.89
+        Max Accuracy = 0.671 (f1-score = 0.799) at threshold 0.89
+0.3     Max F1-score = 0.8 (accuracy = 0.685) at threshold 0.96
+        Max Accuracy = 0.685 (f1-score = 0.8) at threshold 0.96
+0.35    Max F1-score = 0.794 (accuracy = 0.682) at threshold 0.93
+        Max Accuracy = 0.682 (f1-score = 0.794) at threshold 0.93
+
+#XLNet (SOTA)
+0.25             0.68/0.80
+0.27             0.68/0.80
+0.35             0.60/0.79
+0.2              0.67/0.80
