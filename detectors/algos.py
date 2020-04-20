@@ -17,7 +17,7 @@ def mean_phrase(batch_bag1, batch_bag2, threshold, **kwargs):
     return [1 if dist > threshold else 0 for dist in cos_dists]
 
 
-def pairs_matcher(batch_bag1, batch_bag2, threshold, **kwargs):
+def pairs_matcher(batch_bag1, batch_bag2, **kwargs):
     """
     Computes pair-wise similarity between words in bags
     :param batch_bag1: list of tensors, size (batch_size, num_of_features)
@@ -42,22 +42,24 @@ def pairs_matcher(batch_bag1, batch_bag2, threshold, **kwargs):
     #     matches_in_col = np.count_nonzero(max_per_col > threshold)
     #
     #     preds.append(matches_in_row + matches_in_col > 0.6*(m+n))
-
+    # threshold = kwargs.get("threshold", 0.57)
+    thresholds = kwargs.get("thresholds", [0.57])
     for dist in cos_dists:
         m, n = np.shape(dist)
 
         max_per_row = zip(range(m), np.argmax(dist, axis=1))
         max_per_col = zip(np.argmax(dist, axis=0), range(n))
 
-        max_per_row = set([elem for elem in max_per_row if dist[elem[0], elem[1]] > threshold])
-        max_per_col = set([elem for elem in max_per_col if dist[elem[0], elem[1]] > threshold])
+        max_per_row = set([elem for elem in max_per_row if dist[elem[0], elem[1]] > thresholds[0]])
+        max_per_col = set([elem for elem in max_per_col if dist[elem[0], elem[1]] > thresholds[0]])
 
-        preds.append(len(max_per_row.intersection(max_per_col)) > 0.7*min(m, n))
+        # preds.append(len(max_per_row.intersection(max_per_col)) > thresholds[1]*min(m, n))
+        preds.append(len(max_per_row.intersection(max_per_col)) / min(m, n))
 
     return preds
 
 
-def dependency_checker(batch_vect1, batch_vect2, threshold, dep_trees1=None, dep_trees2=None):
+def dependency_checker(batch_vect1, batch_vect2, dep_trees1=None, dep_trees2=None, **kwargs):
     """
     :param batch_vect1: batch of vectors
     :param batch_vect2: batch of vectors
@@ -66,6 +68,8 @@ def dependency_checker(batch_vect1, batch_vect2, threshold, dep_trees1=None, dep
     :param dep_trees2
     :return: [1 if is paraphrase, else 0 for each entry]
     """
+    # threshold = kwargs.get("threshold", 0.57)
+    thresholds = kwargs.get("thresholds", [0.57, 0.5, 0.1])
     preds = []
     for i in range(len(batch_vect1)):
         sent1 = batch_vect1[i]
@@ -75,15 +79,29 @@ def dependency_checker(batch_vect1, batch_vect2, threshold, dep_trees1=None, dep
 
         # cos_dists = cosine_similarity(sent1, sent2)
         # neighbours1 = [[token.head.i] + [child.i for child in list(token.children)] for token in tree1 if token.dep_ != 'punct']
-        neighbours1 = [[token.i, token.head.i] + [child.i for child in list(token.children)] for token in tree1 if token.dep_ != 'punct']
-        neighbours2 = [[token.i, token.head.i] + [child.i for child in list(token.children)] for token in tree2 if token.dep_ != 'punct']
+        neighbours1 = [[token.i, token.head.i] + [child.i for child in list(token.children) if child.dep_ != 'punct'] for token in tree1 if token.dep_ != 'punct']
+        neighbours2 = [[token.i, token.head.i] + [child.i for child in list(token.children) if child.dep_ != 'punct'] for token in tree2 if token.dep_ != 'punct']
+        # neighbours1 = [[token.head.i] + [child.i for child in list(token.children) if child.dep_ != 'punct'] for token in tree1 if token.dep_ != 'punct']
+        # neighbours2 = [[token.head.i] + [child.i for child in list(token.children) if child.dep_ != 'punct'] for token in tree2 if token.dep_ != 'punct']
+        # context_bags1 = [np.mean(sent1[indexes].numpy(), axis=0) for indexes in neighbours1]
+        # context_bags2 = [np.mean(sent2[indexes].numpy(), axis=0) for indexes in neighbours2]
+        context_bags1 = [sent1[indexes] for indexes in neighbours1]
+        context_bags2 = [sent2[indexes] for indexes in neighbours2]
 
-        context_bags1 = [np.mean(sent1[indexes].numpy(), axis=0) for indexes in neighbours1]
-        context_bags2 = [np.mean(sent2[indexes].numpy(), axis=0) for indexes in neighbours2]
+        m = len(context_bags1)
+        n = len(context_bags2)
 
-        similarity = pairs_matcher([context_bags1], [context_bags2], threshold)
+        context_comparison = np.array([[pairs_matcher([context_bags1[i]], [context_bags2[j]], thresholds=thresholds[:1])[0] for j in range(n)] for i in range(m)])
+        max_per_row = zip(range(m), np.argmax(context_comparison, axis=1))
+        max_per_col = zip(np.argmax(context_comparison, axis=0), range(n))
 
-        preds += similarity
+        max_per_row = set([elem for elem in max_per_row if context_comparison[elem[0], elem[1]] > thresholds[1]])
+        max_per_col = set([elem for elem in max_per_col if context_comparison[elem[0], elem[1]] > thresholds[1]])
+
+        preds.append(len(max_per_row.intersection(max_per_col)) / min(m, n))
+        # similarity = pairs_matcher([context_bags1], [context_bags2], threshold=threshold)
+        #
+        # preds += similarity
 
     return preds
 

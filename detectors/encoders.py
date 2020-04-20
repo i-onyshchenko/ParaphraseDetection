@@ -3,6 +3,7 @@ from transformers import *
 from sklearn import metrics
 import numpy as np
 import spacy
+from spacy import displacy
 
 from datasets.mrpc_dataset import MRPCDataSet
 from detectors.algos import DETECTORS
@@ -12,6 +13,8 @@ import datetime
 import time
 
 import matplotlib.pyplot as plt
+
+from itertools import product
 
 # Transformers has a unified API
 # for 10 transformer architectures and 30 pretrained weights.
@@ -40,7 +43,7 @@ THRESHOLDS = {
 
 class ParaphraseDetectionModel:
     def __init__(self):
-        self.thresholds = np.linspace(0.0, 1.0, 100)
+        self.thresholds = np.linspace(0.0, 1.0, 11)
 
     def selectWordsBERT(self, tokenizer, sents):
         """
@@ -52,9 +55,19 @@ class ParaphraseDetectionModel:
         nlp = spacy.load('en_core_web_sm')
         mod_sents = [nlp(sent) for sent in sents]
 
+        # for token in mod_sents[0]:
+        #     print(token.text, token.lemma_, token.pos_, token.tag_, token.dep_,
+        #           token.shape_, token.is_alpha, token.is_stop)
+
+        # displacy.serve(mod_sents[0], style="dep")
+
+        # neighbours1 = [[token.i, token.head.i] + [child.i for child in list(token.children) if child.dep_ != 'punct'] for token in mod_sents[0] if
+        #                token.dep_ != 'punct']
+
         tokenized_sents = [[tokenizer.encode(word.text, add_special_tokens=True)[1:-1] for word in sent] for sent in mod_sents]
         concat_tokenized_sents = [torch.tensor([[101] + sum(sent, []) + [102]]) for sent in tokenized_sents]
         # concat_tokenized_sents = [torch.tensor([sum(sent, [])]) for sent in tokenized_sents]
+        # print(tokenizer.decode(tokenized_sents[0][0]))
 
         indexes = []
         for (i, sent) in enumerate(tokenized_sents):
@@ -73,6 +86,13 @@ class ParaphraseDetectionModel:
                 offset += size
 
             indexes.append(index)
+
+        # print(concat_tokenized_sents[0][0][indexes[0]])
+        # for i in neighbours1:
+        #     print(i)
+        #     for elem in i:
+        #         print(tokenizer.decode(tokenized_sents[0][elem]))
+        # displacy.serve(mod_sents[0], style="dep")
 
         return indexes, concat_tokenized_sents, mod_sents
 
@@ -146,7 +166,9 @@ class ParaphraseDetectionModel:
 
                 print("Time for embeddings: ", time.clock() - t_start)
 
-                report = self.eval_model(DETECTORS['pairs_matcher'], embeddings1, embeddings2, labels, pretrained_weights, dep_trees1=dep_trees1, dep_trees2=dep_trees2)
+                # report = self.eval_model(DETECTORS['dependency_checker'], embeddings1, embeddings2, labels, pretrained_weights, dep_trees1=dep_trees1, dep_trees2=dep_trees2)
+                report = self.find_thresholds(3, DETECTORS['dependency_checker'], embeddings1, embeddings2, labels,
+                                         pretrained_weights, dep_trees1=dep_trees1, dep_trees2=dep_trees2)
                 if verbose:
                     report_file.write("Model {}\n".format(pretrained_weights))
                     report_file.write(report)
@@ -158,15 +180,53 @@ class ParaphraseDetectionModel:
             report_file.close()
         print("Time elapsed: ", time.clock() - t_start)
 
+    def find_thresholds(self, num_thresholds, detector, tokens1, tokens2, labels, model_name, **kwargs):
+        thresholds = product(*np.repeat(self.thresholds[np.newaxis, ...], num_thresholds-1, axis=0))
+        best_acc = 0
+        best_acc_thresholds = None
+        aux_f1 = None
+        best_f1 = 0
+        best_f1_thresholds = None
+        aux_acc = None
+        for th in thresholds:
+            print(th)
+            predictions = detector(tokens1, tokens2, thresholds=th, dep_trees1=kwargs.get("dep_trees1", None),
+                                   dep_trees2=kwargs.get("dep_trees2", None))
+            for final_th in self.thresholds:
+                thresholded = [1 if pred > final_th else 0 for pred in predictions]
+                report = metrics.classification_report(labels, thresholded, output_dict=True)
+
+                if report['accuracy'] > best_acc:
+                    best_acc = report['accuracy']
+                    best_acc_thresholds = list(th) + [final_th]
+                    aux_f1 = report['1']['f1-score']
+                if report['1']['f1-score'] > best_f1:
+                    best_f1 = report['1']['f1-score']
+                    best_f1_thresholds = list(th) + [final_th]
+                    aux_acc = report['accuracy']
+
+        print("Max F1-score = {:.3} (accuracy = {:.3}) at thresholds {}".format(best_f1, aux_acc, best_f1_thresholds))
+        print("Max Accuracy = {:.3} (f1-score = {:.3}) at thresholds {}".format(best_acc, aux_f1, best_acc_thresholds))
+
+        return report
+
     def eval_model(self, detector, tokens1, tokens2, labels, model_name, **kwargs):
         f1_scores = []
         acurracies = []
+        predictions = detector(tokens1, tokens2, threshold=0.57, dep_trees1=kwargs.get("dep_trees1", None), dep_trees2=kwargs.get("dep_trees2", None))
+
+        self.histogram(predictions, labels, show=False)
         for th in self.thresholds:
             # predictions = detector(tokens1, tokens2, THRESHOLDS.get(model_name, 0.9), dep_trees1=kwargs.get("dep_trees1", None), dep_trees2=kwargs.get("dep_trees2", None))
-            predictions = detector(tokens1, tokens2, th, dep_trees1=kwargs.get("dep_trees1", None), dep_trees2=kwargs.get("dep_trees2", None))
-            report = metrics.classification_report(labels, predictions, output_dict=True)
+            thresholded = [1 if pred > th else 0 for pred in predictions]
+            report = metrics.classification_report(labels, thresholded, output_dict=True)
             f1_scores.append(report['1']['f1-score'])
             acurracies.append(report['accuracy'])
+
+        # calculate f1-score and accuracy for all-1 classification
+        report = metrics.classification_report(labels, np.ones(len(labels)), output_dict=True)
+        dummy_f1_score = report['1']['f1-score']
+        dummy_acc = report['accuracy']
 
         print(f1_scores)
         print(acurracies)
@@ -180,13 +240,39 @@ class ParaphraseDetectionModel:
         axs[1].set_ylim([0.0, 1.0])
         axs[0].set_title("F1")
         axs[1].set_title("Accuracy")
-        axs[0].plot(self.thresholds, f1_scores)
-        axs[1].plot(self.thresholds, acurracies)
+        axs[0].plot(self.thresholds, f1_scores, label="Mine")
+        axs[0].plot(self.thresholds, [dummy_f1_score] * len(self.thresholds), label="Dummy")
+        axs[0].legend()
+        axs[1].plot(self.thresholds, acurracies, label="Mine")
+        axs[1].plot(self.thresholds, [dummy_acc] * len(self.thresholds), label="Dummy")
+        axs[1].legend()
 
         plt.subplots_adjust(hspace=0.5)
         plt.show()
 
         return report
+
+    def histogram(self, predictions, labels, **kwargs):
+        pos = []
+        neg = []
+
+        for i in range(len(labels)):
+            if labels[i] == 1:
+                pos.append(predictions[i])
+            else:
+                neg.append(predictions[i])
+
+        names = ["Pos", "Neg"]
+        plt.hist([pos, neg], bins=100, label=names)
+
+        # Plot formatting
+        plt.legend()
+        plt.xlabel('Value')
+        plt.ylabel('Predictions')
+
+        show = kwargs.get("show", True)
+        if show:
+            plt.show()
 
 
 if __name__ == "__main__":
