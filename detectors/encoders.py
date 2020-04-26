@@ -43,7 +43,7 @@ THRESHOLDS = {
 
 class ParaphraseDetectionModel:
     def __init__(self):
-        self.thresholds = np.linspace(0.0, 1.0, 11)
+        self.thresholds = np.linspace(0.0, 1.0, 21)
 
     def selectWordsBERT(self, tokenizer, sents):
         """
@@ -64,10 +64,67 @@ class ParaphraseDetectionModel:
         # neighbours1 = [[token.i, token.head.i] + [child.i for child in list(token.children) if child.dep_ != 'punct'] for token in mod_sents[0] if
         #                token.dep_ != 'punct']
 
+
         tokenized_sents = [[tokenizer.encode(word.text, add_special_tokens=True)[1:-1] for word in sent] for sent in mod_sents]
         concat_tokenized_sents = [torch.tensor([[101] + sum(sent, []) + [102]]) for sent in tokenized_sents]
         # concat_tokenized_sents = [torch.tensor([sum(sent, [])]) for sent in tokenized_sents]
+        # print(tokenized_sents[0])
         # print(tokenizer.decode(tokenized_sents[0][0]))
+        # print(tokenizer.decode(concat_tokenized_sents[0][0]))
+
+        indexes = []
+        for (i, sent) in enumerate(tokenized_sents):
+            index = []
+            # to compensate first special token
+            offset = 1
+            for j in range(len(sent)):
+                size = len(sent[j])
+                # throw away punctuations
+                # if mod_sents[i][j].dep_ != 'punct':
+                #     index.append(offset + size - 1)
+                #     offset += size
+                # else:
+                #     offset += 1
+                index.append(offset + size - 1)
+                offset += size
+
+            indexes.append(index)
+
+        # print(concat_tokenized_sents[0][0][indexes[0]])
+        # for i in neighbours1:
+        #     print(i)
+        #     for elem in i:
+        #         print(tokenizer.decode(tokenized_sents[0][elem]))
+        # displacy.serve(mod_sents[0], style="dep")
+
+        return indexes, concat_tokenized_sents, mod_sents
+
+    def selectWordsRoBERTa(self, tokenizer, sents):
+        """
+        primary for BERT
+        :param tokenizer:
+        :param sents:
+        :return: indexes of valid words, tokenized sentence and dependency tree
+        """
+        nlp = spacy.load('en_core_web_sm')
+        mod_sents = [nlp(sent) for sent in sents]
+
+        # for token in mod_sents[0]:
+        #     print(token.text, token.lemma_, token.pos_, token.tag_, token.dep_,
+        #           token.shape_, token.is_alpha, token.is_stop)
+
+        # displacy.serve(mod_sents[0], style="dep")
+
+        # neighbours1 = [[token.i, token.head.i] + [child.i for child in list(token.children) if child.dep_ != 'punct'] for token in mod_sents[0] if
+        #                token.dep_ != 'punct']
+
+
+        tokenized_sents = [[tokenizer.encode(word.text, add_special_tokens=False) for word in sent] for sent in mod_sents]
+        concat_tokenized_sents = [torch.tensor([[0] + sum(sent, []) + [2]]) for sent in tokenized_sents]
+        # concat_tokenized_sents = [torch.tensor([sum(sent, [])]) for sent in tokenized_sents]
+        # print(tokenized_sents[0])
+        # print(tokenizer.decode(tokenized_sents[0][0]))
+        # print(tokenizer.decode(concat_tokenized_sents[0][0]))
 
         indexes = []
         for (i, sent) in enumerate(tokenized_sents):
@@ -117,7 +174,7 @@ class ParaphraseDetectionModel:
         indexes = []
         for (i, sent) in enumerate(tokenized_sents):
             index = []
-            offset = 0
+            offset = 1
             for j in range(len(sent)):
                 size = len(sent[j])
                 # throw away punctuations
@@ -133,7 +190,7 @@ class ParaphraseDetectionModel:
 
         return indexes, concat_tokenized_sents, mod_sents
 
-    def evaluate(self, pairs=None, labels=None, verbose=False):
+    def evaluate(self, pairs=None, labels=None, test_pairs=None, test_labels=None, verbose=False):
         # Let's encode some text in a sequence of hidden-states using each model:
         t_start = time.clock()
         unziped = list(zip(*pairs))
@@ -160,15 +217,35 @@ class ParaphraseDetectionModel:
                 embeddings2 = [model(tok)[0][0] for tok in tokenized_sents2]
                 print("Embeddings were successfully created!")
 
-                # selecting only embeddings that match words
-                embeddings1 = [embeddings1[i][selected_indexes1[i]] for i in range(len(embeddings1))]
-                embeddings2 = [embeddings2[i][selected_indexes2[i]] for i in range(len(embeddings2))]
+                if test_pairs is not None:
+                    cls1 = [embed.mean(dim=0) for embed in embeddings1]
+                    cls2 = [embed.mean(dim=0) for embed in embeddings2]
 
-                print("Time for embeddings: ", time.clock() - t_start)
+                    test_unziped = list(zip(*test_pairs))
+                    test_sents1, test_sents2 = test_unziped[0], test_unziped[1]
 
-                # report = self.eval_model(DETECTORS['dependency_checker'], embeddings1, embeddings2, labels, pretrained_weights, dep_trees1=dep_trees1, dep_trees2=dep_trees2)
-                report = self.find_thresholds(3, DETECTORS['dependency_checker'], embeddings1, embeddings2, labels,
+                    _, test_tokenized_sents1, _ = self.selectWordsBERT(tokenizer, test_sents1)
+                    _, test_tokenized_sents2, _ = self.selectWordsBERT(tokenizer, test_sents2)
+
+                    test_embeddings1 = [model(tok)[0][0] for tok in test_tokenized_sents1]
+                    test_embeddings2 = [model(tok)[0][0] for tok in test_tokenized_sents2]
+
+                    test_cls1 = [embed.mean(dim=0) for embed in test_embeddings1]
+                    test_cls2 = [embed.mean(dim=0) for embed in test_embeddings2]
+
+                    preds = DETECTORS["svm_bert"](cls1, cls2, labels, test_cls1, test_cls2, test_labels)
+                    report = metrics.classification_report(test_labels, preds, output_dict=False)
+                else:
+                    # selecting only embeddings that match words
+                    embeddings1 = [embeddings1[i][selected_indexes1[i]] for i in range(len(embeddings1))]
+                    embeddings2 = [embeddings2[i][selected_indexes2[i]] for i in range(len(embeddings2))]
+
+                    print("Time for embeddings: ", time.clock() - t_start)
+
+                    # report = self.eval_model(DETECTORS['dependency_checker'], embeddings1, embeddings2, labels, pretrained_weights, dep_trees1=dep_trees1, dep_trees2=dep_trees2)
+                    report = self.find_thresholds(2, DETECTORS['dependency_checker'], embeddings1, embeddings2, labels,
                                          pretrained_weights, dep_trees1=dep_trees1, dep_trees2=dep_trees2)
+
                 if verbose:
                     report_file.write("Model {}\n".format(pretrained_weights))
                     report_file.write(report)
@@ -222,6 +299,7 @@ class ParaphraseDetectionModel:
             report = metrics.classification_report(labels, thresholded, output_dict=True)
             f1_scores.append(report['1']['f1-score'])
             acurracies.append(report['accuracy'])
+
 
         # calculate f1-score and accuracy for all-1 classification
         report = metrics.classification_report(labels, np.ones(len(labels)), output_dict=True)
@@ -277,7 +355,9 @@ class ParaphraseDetectionModel:
 
 if __name__ == "__main__":
     model = ParaphraseDetectionModel()
-    data_set = MRPCDataSet(test_filename='datasets/MRPC/msr_paraphrase_test.txt')
+    data_set = MRPCDataSet(train_filename='datasets/MRPC/msr_paraphrase_train.txt', test_filename='datasets/MRPC/msr_paraphrase_test.txt')
+    train_set = data_set.train_dataset
     test_set = data_set.test_dataset
     if test_set is not None:
+        # model.evaluate(train_set.get_pairs, train_set.get_labels, test_set.get_pairs, test_set.get_labels, verbose=False)
         model.evaluate(test_set.get_pairs, test_set.get_labels, verbose=False)
