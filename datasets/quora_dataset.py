@@ -1,4 +1,4 @@
-class PreMRPCDataSet:
+class PreQuoraDataSet:
     def __init__(self, filename, type):
         self.type = type
         self.pairs = None
@@ -13,7 +13,7 @@ class PreMRPCDataSet:
         lines = f.readlines()[1:]
         parsed_lines = [line.replace('\n', '').split('\t') for line in lines]
         self.pairs = [[line[3], line[4]] for line in parsed_lines]
-        self.labels = [int(line[0]) for line in parsed_lines]
+        self.labels = [int(line[-1]) for line in parsed_lines]
         self.size = len(self.labels)
         self.pos_count = self.labels.count(1)
         self.neg_count = self.size - self.pos_count
@@ -30,10 +30,10 @@ class PreMRPCDataSet:
         return self.labels
 
 
-class MRPCDataSet:
+class QuoraDataSet:
     def __init__(self, train_filename=None, test_filename=None):
-        self.train_data_set = PreMRPCDataSet(train_filename, "train") if train_filename is not None else None
-        self.test_data_set = PreMRPCDataSet(test_filename, "test") if test_filename is not None else None
+        self.train_data_set = PreQuoraDataSet(train_filename, "train") if train_filename is not None else None
+        self.test_data_set = PreQuoraDataSet(test_filename, "test") if test_filename is not None else None
 
     @property
     def train_dataset(self):

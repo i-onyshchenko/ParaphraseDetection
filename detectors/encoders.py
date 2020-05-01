@@ -4,8 +4,10 @@ from sklearn import metrics
 import numpy as np
 import spacy
 from spacy import displacy
+from tqdm import tqdm, trange
 
 from datasets.mrpc_dataset import MRPCDataSet
+from datasets.quora_dataset import QuoraDataSet
 from detectors.algos import DETECTORS
 
 import os
@@ -73,7 +75,7 @@ class ParaphraseDetectionModel:
         # print(tokenizer.decode(concat_tokenized_sents[0][0]))
 
         indexes = []
-        for (i, sent) in enumerate(tokenized_sents):
+        for sent in tokenized_sents:
             index = []
             # to compensate first special token
             offset = 1
@@ -207,14 +209,18 @@ class ParaphraseDetectionModel:
             # tokenized_sents2 = [torch.tensor([tokenizer.encode(text=sent, add_special_tokens=True, add_space_before_punct_symbol=True)]) for sent in sents2]
             # print(tokenized_sents1[0][0])
             # print(tokenized_sents2[0][0])
-            print("Sentences were successfully tokenized!")
+            # print("Sentences were successfully tokenized!")
 
+            print("Parsing first sentences...")
             selected_indexes1, tokenized_sents1, dep_trees1 = self.selectWordsBERT(tokenizer, sents1)
+            print("Parsing second sentences...")
             selected_indexes2, tokenized_sents2, dep_trees2 = self.selectWordsBERT(tokenizer, sents2)
 
             with torch.no_grad():
-                embeddings1 = [model(tok)[0][0] for tok in tokenized_sents1]
-                embeddings2 = [model(tok)[0][0] for tok in tokenized_sents2]
+                print("Generating first embeddings...")
+                embeddings1 = [model(tok)[0][0] for tok in tqdm(tokenized_sents1)]
+                print("Generating second embeddings...")
+                embeddings2 = [model(tok)[0][0] for tok in tqdm(tokenized_sents2)]
                 print("Embeddings were successfully created!")
 
                 if test_pairs is not None:
@@ -355,8 +361,9 @@ class ParaphraseDetectionModel:
 
 if __name__ == "__main__":
     model = ParaphraseDetectionModel()
-    data_set = MRPCDataSet(train_filename='datasets/MRPC/msr_paraphrase_train.txt', test_filename='datasets/MRPC/msr_paraphrase_test.txt')
-    train_set = data_set.train_dataset
+    # data_set = MRPCDataSet(train_filename='datasets/MRPC/msr_paraphrase_train.txt', test_filename='datasets/MRPC/msr_paraphrase_test.txt')
+    # train_set = data_set.train_dataset
+    data_set = QuoraDataSet(test_filename="datasets/Quora/dev.tsv")
     test_set = data_set.test_dataset
     if test_set is not None:
         # model.evaluate(train_set.get_pairs, train_set.get_labels, test_set.get_pairs, test_set.get_labels, verbose=False)

@@ -82,10 +82,10 @@ def dependency_checker(batch_vect1, batch_vect2, dep_trees1=None, dep_trees2=Non
 
         # cos_dists = cosine_similarity(sent1, sent2)
         # neighbours1 = [[token.head.i] + [child.i for child in list(token.children)] for token in tree1 if token.dep_ != 'punct']
-        # neighbours1 = [[token.i]*2 + [child.i for child in list(token.lefts)] + [child.i for child in list(token.rights)] for token in tree1 if token.dep_ != "punct"]
-        # neighbours2 = [[token.i]*2 + [child.i for child in list(token.lefts)] + [child.i for child in list(token.rights)] for token in tree2 if token.dep_ != "punct"]
-        neighbours1 = [[token.i, token.head.i] + [child.i for child in list(token.subtree)] for token in tree1 if token.dep_ != "punct"]
-        neighbours2 = [[token.i, token.head.i] + [child.i for child in list(token.subtree)] for token in tree2 if token.dep_ != "punct"]
+        neighbours1 = [[token.i] + [child.i for child in list(token.lefts)] + [child.i for child in list(token.rights)] for token in tree1 if token.dep_ != "punct"]
+        neighbours2 = [[token.i] + [child.i for child in list(token.lefts)] + [child.i for child in list(token.rights)] for token in tree2 if token.dep_ != "punct"]
+        # neighbours1 = [[token.i, token.head.i] + [child.i for child in list(token.subtree)] for token in tree1 if token.dep_ != "punct"]
+        # neighbours2 = [[token.i, token.head.i] + [child.i for child in list(token.subtree)] for token in tree2 if token.dep_ != "punct"]
         # neighbours1 = [[token.i] + [child.i for child in list(token.children)] for token in tree1 if token.dep_ in dep]
         # neighbours2 = [[token.i] + [child.i for child in list(token.children)] for token in tree2 if token.dep_ in dep]
         # context_bags1 = [np.mean(sent1[indexes].numpy(), axis=0) for indexes in neighbours1]
