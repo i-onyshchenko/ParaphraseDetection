@@ -66,7 +66,6 @@ class ParaphraseDetectionModel:
         # neighbours1 = [[token.i, token.head.i] + [child.i for child in list(token.children) if child.dep_ != 'punct'] for token in mod_sents[0] if
         #                token.dep_ != 'punct']
 
-
         tokenized_sents = [[tokenizer.encode(word.text, add_special_tokens=True)[1:-1] for word in sent] for sent in mod_sents]
         concat_tokenized_sents = [torch.tensor([[101] + sum(sent, []) + [102]]) for sent in tokenized_sents]
         # concat_tokenized_sents = [torch.tensor([sum(sent, [])]) for sent in tokenized_sents]
@@ -271,6 +270,10 @@ class ParaphraseDetectionModel:
         best_f1 = 0
         best_f1_thresholds = None
         aux_acc = None
+        best_sum = 0
+        sum_acc = None
+        sum_f1 = None
+        sum_thresholds = None
         for th in thresholds:
             print(th)
             predictions = detector(tokens1, tokens2, thresholds=th, dep_trees1=kwargs.get("dep_trees1", None),
@@ -287,9 +290,15 @@ class ParaphraseDetectionModel:
                     best_f1 = report['1']['f1-score']
                     best_f1_thresholds = list(th) + [final_th]
                     aux_acc = report['accuracy']
+                if report['accuracy'] + report['1']['f1-score'] > best_sum:
+                    best_sum = report['accuracy'] + report['1']['f1-score']
+                    sum_acc = report['accuracy']
+                    sum_f1 = report['1']['f1-score']
+                    sum_thresholds = list(th) + [final_th]
 
         print("Max F1-score = {:.3} (accuracy = {:.3}) at thresholds {}".format(best_f1, aux_acc, best_f1_thresholds))
         print("Max Accuracy = {:.3} (f1-score = {:.3}) at thresholds {}".format(best_acc, aux_f1, best_acc_thresholds))
+        print("Best combo: Accuracy =  {:.3}, f1-score = {:.3} at thresholds {}".format(sum_acc, sum_f1, sum_thresholds))
 
         return report
 
