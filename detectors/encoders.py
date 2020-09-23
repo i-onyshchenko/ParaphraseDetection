@@ -45,7 +45,7 @@ THRESHOLDS = {
 
 class ParaphraseDetectionModel:
     def __init__(self):
-        self.thresholds = np.linspace(0.0, 1.0, 21)
+        self.thresholds = np.linspace(0.0, 1.0, 101)
 
     def selectWordsBERT(self, tokenizer, sents):
         """
@@ -247,9 +247,9 @@ class ParaphraseDetectionModel:
 
                     print("Time for embeddings: ", time.clock() - t_start)
 
-                    # report = self.eval_model(DETECTORS['dependency_checker'], embeddings1, embeddings2, labels, pretrained_weights, dep_trees1=dep_trees1, dep_trees2=dep_trees2)
-                    report = self.find_thresholds(2, DETECTORS['dependency_checker'], embeddings1, embeddings2, labels,
-                                         pretrained_weights, dep_trees1=dep_trees1, dep_trees2=dep_trees2)
+                    report = self.eval_model(DETECTORS['dependency_checker'], embeddings1, embeddings2, labels, pretrained_weights, dep_trees1=dep_trees1, dep_trees2=dep_trees2)
+                    # report = self.find_thresholds(2, DETECTORS['dependency_checker'], embeddings1, embeddings2, labels,
+                    #                      pretrained_weights, dep_trees1=dep_trees1, dep_trees2=dep_trees2)
 
                 if verbose:
                     report_file.write("Model {}\n".format(pretrained_weights))
@@ -308,10 +308,12 @@ class ParaphraseDetectionModel:
         predictions = detector(tokens1, tokens2, threshold=0.57, dep_trees1=kwargs.get("dep_trees1", None), dep_trees2=kwargs.get("dep_trees2", None))
 
         self.histogram(predictions, labels, show=False)
-        for th in self.thresholds:
+        # for th in self.thresholds:
+        for th in [0.53]:
             # predictions = detector(tokens1, tokens2, THRESHOLDS.get(model_name, 0.9), dep_trees1=kwargs.get("dep_trees1", None), dep_trees2=kwargs.get("dep_trees2", None))
             thresholded = [1 if pred > th else 0 for pred in predictions]
             report = metrics.classification_report(labels, thresholded, output_dict=True)
+            print(report)
             f1_scores.append(report['1']['f1-score'])
             acurracies.append(report['accuracy'])
 
@@ -370,10 +372,10 @@ class ParaphraseDetectionModel:
 
 if __name__ == "__main__":
     model = ParaphraseDetectionModel()
-    # data_set = MRPCDataSet(train_filename='datasets/MRPC/msr_paraphrase_train.txt', test_filename='datasets/MRPC/msr_paraphrase_test.txt')
-    # train_set = data_set.train_dataset
-    data_set = QuoraDataSet(test_filename="datasets/Quora/dev.tsv")
+    data_set = MRPCDataSet(train_filename='datasets/MRPC/msr_paraphrase_train.txt', test_filename='datasets/MRPC/msr_paraphrase_test.txt')
     test_set = data_set.test_dataset
+    # data_set = QuoraDataSet(test_filename="datasets/Quora/dev.tsv")
+    # test_set = data_set.test_dataset
     if test_set is not None:
         # model.evaluate(train_set.get_pairs, train_set.get_labels, test_set.get_pairs, test_set.get_labels, verbose=False)
         model.evaluate(test_set.get_pairs, test_set.get_labels, verbose=False)

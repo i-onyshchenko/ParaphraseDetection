@@ -70,7 +70,7 @@ def dependency_checker(batch_vect1, batch_vect2, dep_trees1=None, dep_trees2=Non
     :return: [1 if is paraphrase, else 0 for each entry]
     """
     # threshold = kwargs.get("threshold", 0.57)
-    thresholds = kwargs.get("thresholds", [0.6, 0.5, 0.1])
+    thresholds = kwargs.get("thresholds", [0.65, 0.5, 0.1])
     preds = []
     pos = {"PROPN", "NOUN", "VERB", "ADJ", "ADV"}
     dep = {"ROOT", "nsubj", "nsubjpass", "dobj", "pobj", "conj", "nmod", "obj", "iobj", "agent", "attr", "csubj", "csubjpass"}
@@ -82,12 +82,12 @@ def dependency_checker(batch_vect1, batch_vect2, dep_trees1=None, dep_trees2=Non
 
         # cos_dists = cosine_similarity(sent1, sent2)
         # neighbours1 = [[token.head.i] + [child.i for child in list(token.children)] for token in tree1 if token.dep_ != 'punct']
-        # neighbours1 = [[token.i] + [child.i for child in list(token.lefts)] + [child.i for child in list(token.rights)] for token in tree1 if token.dep_ != "punct"]
-        # neighbours2 = [[token.i] + [child.i for child in list(token.lefts)] + [child.i for child in list(token.rights)] for token in tree2 if token.dep_ != "punct"]
+        neighbours1 = [[token.i] + [child.i for child in list(token.lefts)] + [child.i for child in list(token.rights)] for token in tree1 if token.dep_ != "punct"]
+        neighbours2 = [[token.i] + [child.i for child in list(token.lefts)] + [child.i for child in list(token.rights)] for token in tree2 if token.dep_ != "punct"]
         # neighbours1 = [[token.i, token.head.i] + [child.i for child in list(token.subtree)] for token in tree1 if token.dep_ != "punct"]
         # neighbours2 = [[token.i, token.head.i] + [child.i for child in list(token.subtree)] for token in tree2 if token.dep_ != "punct"]
-        neighbours1 = [[token.i] for token in tree1 if token.dep_ != "punct"]
-        neighbours2 = [[token.i] for token in tree2 if token.dep_ != "punct"]
+        # neighbours1 = [[token.i] for token in tree1 if token.dep_ != "punct"]
+        # neighbours2 = [[token.i] for token in tree2 if token.dep_ != "punct"]
         # context_bags1 = [np.mean(sent1[indexes].numpy(), axis=0) for indexes in neighbours1]
         # context_bags2 = [np.mean(sent2[indexes].numpy(), axis=0) for indexes in neighbours2]
         context_bags1 = [np.mean(sent1[indexes].numpy(), axis=0) for indexes in neighbours1]
