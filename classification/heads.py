@@ -17,9 +17,10 @@ class ClassificationHead(nn.Module):
         sentences1 = torch.mean(inputs[0], dim=1)
         sentences2 = torch.mean(inputs[1], dim=1)
         x1 = self.fc(sentences1)
-        x1 = F.relu(x1)
+        x1 = F.tanh(x1)
         x2 = self.fc(sentences2)
-        x2 = F.relu(x2)
-        dist = F.cosine_similarity(x1, x2)
+        x2 = F.tanh(x2)
+        # 1 - paraphrase, 0 - otherwise
+        score = F.cosine_similarity(x1, x2)
 
-        return dist
+        return score, x1, x2
