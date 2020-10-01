@@ -4,7 +4,41 @@ from sklearn.model_selection import KFold
 from scipy import interpolate
 
 
-def evaluate_classification(sentences1, sentences2, labels, nrof_folds=10, distance_metric=0, subtract_mean=False):
+def evaluate_classification(logits, labels, nrof_folds=10):
+    nrof_pairs = min(len(labels), logits.shape[0])
+    thresholds = np.arange(0, 4, 0.01)
+    nrof_thresholds = len(thresholds)
+    k_fold = KFold(n_splits=nrof_folds, shuffle=False)
+
+    tprs = np.zeros((nrof_folds, nrof_thresholds))
+    fprs = np.zeros((nrof_folds, nrof_thresholds))
+    accuracy = np.zeros((nrof_folds))
+    f1 = np.zeros((nrof_folds))
+
+    indices = np.arange(nrof_pairs)
+
+    for fold_idx, (train_set, test_set) in enumerate(k_fold.split(indices)):
+        # Find the best threshold for the fold
+        acc_train = np.zeros((nrof_thresholds))
+        f1_train = np.zeros((nrof_thresholds))
+        for threshold_idx, threshold in enumerate(thresholds):
+            _, _, acc_train[threshold_idx], f1_train[threshold_idx] = calculate_accuracy(threshold, logits[train_set],
+                                                                                         labels[train_set])
+        best_threshold_index = np.argmax(acc_train)
+        for threshold_idx, threshold in enumerate(thresholds):
+            tprs[fold_idx, threshold_idx], fprs[fold_idx, threshold_idx], _, _ = calculate_accuracy(threshold,
+                                                                                                    logits[test_set],
+                                                                                                    labels[test_set])
+        _, _, accuracy[fold_idx], f1[fold_idx] = calculate_accuracy(thresholds[best_threshold_index], logits[test_set],
+                                                                    labels[test_set])
+
+    tpr = np.mean(tprs, 0)
+    fpr = np.mean(fprs, 0)
+
+    return tpr, fpr, accuracy, f1
+
+
+def evaluate_embeddings(sentences1, sentences2, labels, nrof_folds=10, distance_metric=0, subtract_mean=False):
     # Calculate evaluation metrics
     thresholds = np.arange(0, 4, 0.01)
     tpr, fpr, accuracy, f1 = calculate_roc(thresholds, sentences1, sentences2,
