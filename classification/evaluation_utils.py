@@ -7,14 +7,15 @@ from scipy import interpolate
 def evaluate_classification(sentences1, sentences2, labels, nrof_folds=10, distance_metric=0, subtract_mean=False):
     # Calculate evaluation metrics
     thresholds = np.arange(0, 4, 0.01)
-    tpr, fpr, accuracy = calculate_roc(thresholds, sentences1, sentences2,
+    tpr, fpr, accuracy, f1 = calculate_roc(thresholds, sentences1, sentences2,
                                                np.asarray(labels), nrof_folds=nrof_folds,
                                                distance_metric=distance_metric, subtract_mean=subtract_mean)
     thresholds = np.arange(0, 4, 0.001)
-    val, val_std, far = calculate_val(thresholds, sentences1, sentences2,
-                                              np.asarray(labels), 1e-3, nrof_folds=nrof_folds,
-                                              distance_metric=distance_metric, subtract_mean=subtract_mean)
-    return tpr, fpr, accuracy, val, val_std, far
+    # val, val_std, far = calculate_val(thresholds, sentences1, sentences2,
+    #                                           np.asarray(labels), 1e-3, nrof_folds=nrof_folds,
+    #                                           distance_metric=distance_metric, subtract_mean=subtract_mean)
+    val, val_std, far = 0, 0, 0
+    return tpr, fpr, accuracy, f1, val, val_std, far
 
 
 def distance(embeddings1, embeddings2, distance_metric=0):
@@ -45,6 +46,7 @@ def calculate_roc(thresholds, embeddings1, embeddings2, actual_issame, nrof_fold
     tprs = np.zeros((nrof_folds, nrof_thresholds))
     fprs = np.zeros((nrof_folds, nrof_thresholds))
     accuracy = np.zeros((nrof_folds))
+    f1 = np.zeros((nrof_folds))
 
     indices = np.arange(nrof_pairs)
 
@@ -57,20 +59,22 @@ def calculate_roc(thresholds, embeddings1, embeddings2, actual_issame, nrof_fold
 
         # Find the best threshold for the fold
         acc_train = np.zeros((nrof_thresholds))
+        f1_train = np.zeros((nrof_thresholds))
         for threshold_idx, threshold in enumerate(thresholds):
-            _, _, acc_train[threshold_idx] = calculate_accuracy(threshold, dist[train_set], actual_issame[train_set])
+            _, _, acc_train[threshold_idx], f1_train[threshold_idx] = calculate_accuracy(threshold, dist[train_set], actual_issame[train_set])
         best_threshold_index = np.argmax(acc_train)
         for threshold_idx, threshold in enumerate(thresholds):
-            tprs[fold_idx, threshold_idx], fprs[fold_idx, threshold_idx], _ = calculate_accuracy(threshold,
+            tprs[fold_idx, threshold_idx], fprs[fold_idx, threshold_idx], _, _ = calculate_accuracy(threshold,
                                                                                                  dist[test_set],
                                                                                                  actual_issame[
                                                                                                      test_set])
-        _, _, accuracy[fold_idx] = calculate_accuracy(thresholds[best_threshold_index], dist[test_set],
+        _, _, accuracy[fold_idx], f1[fold_idx] = calculate_accuracy(thresholds[best_threshold_index], dist[test_set],
                                                       actual_issame[test_set])
 
-        tpr = np.mean(tprs, 0)
-        fpr = np.mean(fprs, 0)
-    return tpr, fpr, accuracy
+    tpr = np.mean(tprs, 0)
+    fpr = np.mean(fprs, 0)
+
+    return tpr, fpr, accuracy, f1
 
 
 def calculate_accuracy(threshold, dist, actual_issame):
@@ -82,8 +86,9 @@ def calculate_accuracy(threshold, dist, actual_issame):
 
     tpr = 0 if (tp + fn == 0) else float(tp) / float(tp + fn)
     fpr = 0 if (fp + tn == 0) else float(fp) / float(fp + tn)
+    f1 = tp / (tp + 0.5*(fp + fn))
     acc = float(tp + tn) / dist.size
-    return tpr, fpr, acc
+    return tpr, fpr, acc, f1
 
 
 def calculate_val(thresholds, embeddings1, embeddings2, actual_issame, far_target, nrof_folds=10, distance_metric=0,

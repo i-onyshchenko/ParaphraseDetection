@@ -15,7 +15,7 @@ from evaluation_utils import evaluate_classification
 
 
 class MyTrainer:
-    def __init__(self, model, batch_size=128, epochs=20, epoch_size=10):
+    def __init__(self, model, batch_size=256, epochs=50, epoch_size=10):
         # super(MyTrainer, self).__init__()
         self.model = model
         self.batch_size = batch_size
@@ -32,7 +32,6 @@ class MyTrainer:
 
         self.test_dataset = load_dataset("csv", data_files={"test": "/home/ihor/University/DiplomaProject/Program/datasets/MRPC/msr_paraphrase_test.txt"},
                                          skip_rows=1, delimiter='\t', quote_char=False, column_names=['label', 'idx1', 'idx2', 'sentence1', 'sentence2'], split="test")
-
         self.nrof_test_samples = len(self.test_dataset["label"])
 
         self.criterion = nn.CrossEntropyLoss()
@@ -43,7 +42,7 @@ class MyTrainer:
              'weight_decay': 0.01},
             {'params': [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
         ]
-        self.optimizer = AdamW(optimizer_grouped_parameters, lr=1e-5)
+        self.optimizer = AdamW(optimizer_grouped_parameters, lr=1e-3)
         # optimizer = optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9)
 
     # def compute_loss(self, inputs):
@@ -70,6 +69,7 @@ class MyTrainer:
                 self.optimizer.zero_grad()
 
                 loss = F.binary_cross_entropy(logits, labels)
+                # loss = self.criterion(logits, labels)
                 loss.backward()
                 self.optimizer.step()
 
@@ -104,12 +104,13 @@ class MyTrainer:
 
         labels = np.array(self.test_dataset["label"])
 
-        tpr, fpr, accuracy, val, val_std, far = evaluate_classification(embeddings1, embeddings2, labels, nrof_folds=10,
+        tpr, fpr, accuracy, f1, val, val_std, far = evaluate_classification(embeddings1, embeddings2, labels, nrof_folds=10,
                                                              distance_metric=1,
                                                              subtract_mean=False)
 
         print('Accuracy: %2.5f+-%2.5f' % (np.mean(accuracy), np.std(accuracy)))
-        print('Validation rate: %2.5f+-%2.5f @ FAR=%2.5f' % (val, val_std, far))
+        print('F1: %2.5f+-%2.5f' % (np.mean(f1), np.std(f1)))
+        # print('Validation rate: %2.5f+-%2.5f @ FAR=%2.5f' % (val, val_std, far))
 
 
 if __name__ == "__main__":
