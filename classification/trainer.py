@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 from model import Model
 from nlp import load_dataset
-from evaluation_utils import evaluate_classification
+from evaluation_utils import evaluate_classification, evaluate_embeddings
 
 
 class MyTrainer:
@@ -63,7 +63,7 @@ class MyTrainer:
                 inputs = [sentences1, sentences2]
                 labels = torch.as_tensor([self.train_dataset["label"][idx] for idx in batch_indexes], dtype=torch.float, device=self.device)
 
-                logits, _, _ = self.model.to(self.device).forward(inputs)
+                logits = self.model.to(self.device).forward(inputs)
 
                 # zero the parameter gradients
                 self.optimizer.zero_grad()
@@ -79,6 +79,44 @@ class MyTrainer:
             self.evaluate()
 
     def evaluate(self):
+        """
+        It is used for evaluation with binary output
+        :return:
+        """
+        print('-' * 80)
+        print("Evaluation...")
+
+        sentences1 = self.test_dataset["sentence1"]
+        sentences2 = self.test_dataset["sentence2"]
+
+        logits = np.zeros(self.nrof_test_samples)
+
+        steps = self.nrof_test_samples // self.batch_size
+
+        # include last small batch if necessary
+        if steps * self.batch_size != self.nrof_test_samples:
+            steps += 1
+
+        with torch.no_grad():
+            for i in tqdm(range(steps)):
+                inputs = [sentences1[i * self.batch_size:(i + 1) * self.batch_size],
+                          sentences2[i * self.batch_size:(i + 1) * self.batch_size]]
+                batch_logits = self.model.to(self.device).forward(inputs)
+                logits[i * self.batch_size:(i + 1) * self.batch_size] = batch_logits.cpu()
+
+        labels = np.array(self.test_dataset["label"])
+
+        tpr, fpr, accuracy, f1 = evaluate_classification(logits, labels, nrof_folds=10)
+
+        print('Accuracy: %2.5f+-%2.5f' % (np.mean(accuracy), np.std(accuracy)))
+        print('F1: %2.5f+-%2.5f' % (np.mean(f1), np.std(f1)))
+
+
+    def evaluate_embed(self):
+        """
+        It is used for classification with custom distance (cosine, euclid) between embeddings
+        :return:
+        """
         print('-'*80)
         print("Evaluation...")
 
@@ -104,7 +142,7 @@ class MyTrainer:
 
         labels = np.array(self.test_dataset["label"])
 
-        tpr, fpr, accuracy, f1, val, val_std, far = evaluate_classification(embeddings1, embeddings2, labels, nrof_folds=10,
+        tpr, fpr, accuracy, f1, val, val_std, far = evaluate_embeddings(embeddings1, embeddings2, labels, nrof_folds=10,
                                                              distance_metric=1,
                                                              subtract_mean=False)
 

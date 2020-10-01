@@ -1,6 +1,6 @@
 from transformers import AutoTokenizer, AutoModel
 import torch.nn as nn
-from heads import ClassificationHead
+from heads import DummyHead, GLUEHead
 import numpy as np
 
 
@@ -9,8 +9,9 @@ class Model(nn.Module):
         super(Model, self).__init__()
         self.base_tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
         self.base_model = AutoModel.from_pretrained("bert-base-uncased")
-        self.last_layer_size = 768
-        self.classification_head = ClassificationHead(input_size=768, output_size=self.last_layer_size)
+        self.base_embedding_size = 768
+        self.last_layer_size = 1
+        self.classification_head = GLUEHead(input_size=768*4, output_size=1)
         self.device = "cuda"
         for param in self.base_model.parameters():
             param.requires_grad = False
@@ -32,9 +33,15 @@ class Model(nn.Module):
         embeddings1 = self.base_model.to(self.device)(**tokens1)[0]
         embeddings2 = self.base_model.to(self.device)(**tokens2)[0]
 
-        logits, embeddings1, embeddings2 = self.classification_head.to(self.device)([embeddings1, embeddings2])
+        # use this line if head returns its own embeddings
+        # logits, embeddings1, embeddings2 = self.classification_head.to(self.device)([embeddings1, embeddings2])
+        logits = self.classification_head.to(self.device)([embeddings1, embeddings2])
 
-        return logits, embeddings1, embeddings2
+        return logits
+
+    @property
+    def embed_size(self):
+        return self.base_embedding_size
 
     @property
     def output_size(self):
