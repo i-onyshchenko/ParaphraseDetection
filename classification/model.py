@@ -11,7 +11,7 @@ class Model(nn.Module):
         self.base_model = AutoModel.from_pretrained("bert-base-uncased")
         self.base_embedding_size = 768
         self.last_layer_size = 1
-        self.classification_head = GLUEHead(input_size=768*4, output_size=1)
+        self.classification_head = GLUEHead()
         self.device = "cuda"
         for param in self.base_model.parameters():
             param.requires_grad = False
@@ -26,9 +26,9 @@ class Model(nn.Module):
         :param inputs: list of shape (2, batch_size)
         :return: tensor of shape (batch_size, 1)
         """
-        tokens1 = self.tokenizer(inputs[0], truncation=True, padding=True, max_length=512, return_tensors="pt")
+        tokens1 = self.tokenizer(inputs[0], truncation=True, padding=True, max_length=128, return_tensors="pt")
         tokens1 = {key: value.to(self.device) for key, value in tokens1.items()}
-        tokens2 = self.tokenizer(inputs[1], truncation=True, padding=True, max_length=512, return_tensors="pt")
+        tokens2 = self.tokenizer(inputs[1], truncation=True, padding=True, max_length=128, return_tensors="pt")
         tokens2 = {key: value.to(self.device) for key, value in tokens2.items()}
         embeddings1 = self.base_model.to(self.device)(**tokens1)[0]
         embeddings2 = self.base_model.to(self.device)(**tokens2)[0]

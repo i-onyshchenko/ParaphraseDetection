@@ -29,21 +29,34 @@ class DummyHead(nn.Module):
 
 
 class GLUEHead(nn.Module):
-    def __init__(self, input_size=768*4, output_size=1):
+    def __init__(self, input_size=768*4, output_size=2):
         super(GLUEHead, self).__init__()
-        self.fc = nn.Linear(input_size, output_size)
-        self.dropout = nn.Dropout(p=0.5)
+        self.fc1 = nn.Linear(input_size // 4, 256)
+        self.fc2 = nn.Linear(input_size // 4, 256)
+        self.fc3 = nn.Linear(input_size // 4, 256)
+        self.fc4 = nn.Linear(256*4, output_size)
+        self.dropout = nn.Dropout(p=0.2)
+        self.batch_norm = nn.BatchNorm1d(256*4)
 
     def forward(self, inputs):
         original_x1 = torch.mean(inputs[0], dim=1)
+        # original_x1 = inputs[0][:, 0]
         original_x2 = torch.mean(inputs[1], dim=1)
+        # original_x2 = inputs[1][:, 0]
         abs_diff_x = torch.abs(original_x1 - original_x2)
         product_x = original_x1*original_x2
 
+        original_x1 = self.fc1(original_x1)
+        original_x2 = self.fc1(original_x2)
+        abs_diff_x = self.fc2(abs_diff_x)
+        product_x = self.fc3(product_x)
+
         x = torch.cat((original_x1, original_x2, abs_diff_x, product_x), dim=1)
+        # x = torch.cat((original_x1, original_x2), dim=1)
 
-        x = self.dropout(x)
-        x = self.fc(x)
-        logits = F.sigmoid(x)
+        # x = self.dropout(x)
+        # x = self.batch_norm(x)
+        x = self.fc4(x)
+        # logits = F.sigmoid(x)
 
-        return logits.squeeze()
+        return x
