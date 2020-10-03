@@ -29,10 +29,10 @@ class MyTrainer:
         # self.train_dataset = glue_convert_examples_to_features(data['train'], self.tokenizer, max_length=128, task='mrpc')
         # self.train_dataset = self.train_dataset.shuffle(100).batch(32).repeat(2)
         # print(type(self.train_dataset))
-        self.train_dataset = load_dataset("glue", "qqp", split="train")
-        self.train_data_loader = torch.utils.data.DataLoader(self.train_dataset, batch_size=256, shuffle=True)
+        self.train_dataset = load_dataset("glue", "mrpc", split="train")
         self.nrof_train_samples = len(self.train_dataset["label"])
         print("Samples in train_set: {}".format(self.nrof_train_samples))
+        self.train_data_loader = torch.utils.data.DataLoader(self.train_dataset, batch_size=256, shuffle=True)
 
         self.test_dataset = load_dataset("csv", data_files={"test": "/home/ihor/University/DiplomaProject/Program/datasets/MRPC/msr_paraphrase_test.txt"},
                                          skip_rows=1, delimiter='\t', quote_char=False, column_names=['label', 'idx1', 'idx2', 'sentence1', 'sentence2'], split="test")
@@ -67,8 +67,10 @@ class MyTrainer:
                 # get the inputs; data is a list of [inputs, labels]
                 # batch_indexes = np.random.choice(self.nrof_train_samples, self.batch_size, replace=False)
 
-                sentences1 = batch["question1"]
-                sentences2 = batch["question2"]
+                # sentences1 = batch["question1"]
+                # sentences2 = batch["question2"]
+                sentences1 = batch["sentence1"]
+                sentences2 = batch["sentence2"]
                 # sentences1 = [self.train_dataset["question1"][idx] for idx in batch_indexes]
                 # sentences2 = [self.train_dataset["question2"][idx] for idx in batch_indexes]
                 inputs = [sentences1, sentences2]
