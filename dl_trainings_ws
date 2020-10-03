@@ -1,0 +1,5 @@
+# siamese with one hidden layer (768) and tanh actvation
+# mean of ALL embeddings
+# Epoch: 18
+Accuracy: 0.76690+-0.03268
+F1: 0.83254+-0.02580

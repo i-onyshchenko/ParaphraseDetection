@@ -15,7 +15,7 @@ from evaluation_utils import evaluate_classification, evaluate_embeddings
 
 
 class MyTrainer:
-    def __init__(self, model, batch_size=512, epochs=50, epoch_size=8):
+    def __init__(self, model, batch_size=256, epochs=100, epoch_size=16):
         # super(MyTrainer, self).__init__()
         self.model = model
         self.batch_size = batch_size
@@ -23,17 +23,22 @@ class MyTrainer:
         self.epoch_size = epoch_size
         self.device = "cuda"
 
+        self.model.to(self.device)
+
         # data = tfds.load('glue/mrpc')
         # self.train_dataset = glue_convert_examples_to_features(data['train'], self.tokenizer, max_length=128, task='mrpc')
         # self.train_dataset = self.train_dataset.shuffle(100).batch(32).repeat(2)
         # print(type(self.train_dataset))
-        self.train_dataset = load_dataset("glue", "mrpc", split="train")
+        self.train_dataset = load_dataset("glue", "qqp", split="train")
+        self.train_data_loader = torch.utils.data.DataLoader(self.train_dataset, batch_size=256, shuffle=True)
         self.nrof_train_samples = len(self.train_dataset["label"])
+        print("Samples in train_set: {}".format(self.nrof_train_samples))
 
         self.test_dataset = load_dataset("csv", data_files={"test": "/home/ihor/University/DiplomaProject/Program/datasets/MRPC/msr_paraphrase_test.txt"},
                                          skip_rows=1, delimiter='\t', quote_char=False, column_names=['label', 'idx1', 'idx2', 'sentence1', 'sentence2'], split="test")
         self.nrof_test_samples = len(self.test_dataset["label"])
 
+        # for logits of size (batch_size, nrof_classes)
         self.criterion = nn.CrossEntropyLoss()
 
         no_decay = ['bias', 'LayerNorm.weight']
@@ -42,10 +47,10 @@ class MyTrainer:
              'weight_decay': 0.01},
             {'params': [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
         ]
-        self.optimizer = AdamW(optimizer_grouped_parameters, lr=1e-1)
+        self.optimizer = AdamW(optimizer_grouped_parameters, lr=1e-3)
         # self.optimizer = optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9)
 
-        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=5, gamma=0.1)
+        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=20, gamma=0.5)
 
     # def compute_loss(self, inputs):
     #     labels = inputs.pop("labels")
@@ -57,32 +62,40 @@ class MyTrainer:
         self.model.train()
         for epoch in range(self.epochs):  # loop over the dataset multiple times
             # TODO: add iterator/sampler
-            for i in range(self.epoch_size):
+            for i, batch in enumerate(self.train_data_loader):
                 start_time = time.time()
                 # get the inputs; data is a list of [inputs, labels]
-                batch_indexes = np.random.choice(self.nrof_train_samples, self.batch_size, replace=False)
-                sentences1 = [self.train_dataset["sentence1"][idx] for idx in batch_indexes]
-                sentences2 = [self.train_dataset["sentence2"][idx] for idx in batch_indexes]
-                inputs = [sentences1, sentences2]
-                labels = torch.as_tensor([self.train_dataset["label"][idx] for idx in batch_indexes], dtype=torch.long, device=self.device)
+                # batch_indexes = np.random.choice(self.nrof_train_samples, self.batch_size, replace=False)
 
-                logits = self.model.to(self.device).forward(inputs)
+                sentences1 = batch["question1"]
+                sentences2 = batch["question2"]
+                # sentences1 = [self.train_dataset["question1"][idx] for idx in batch_indexes]
+                # sentences2 = [self.train_dataset["question2"][idx] for idx in batch_indexes]
+                inputs = [sentences1, sentences2]
+
+                # labels = torch.as_tensor([self.train_dataset["label"][idx] for idx in batch_indexes], dtype=torch.float, device=self.device)
+                labels = torch.as_tensor(batch['label'], dtype=torch.float, device=self.device)
+
+                logits = self.model.forward(inputs)
 
                 # zero the parameter gradients
                 self.optimizer.zero_grad()
 
-                # loss = F.binary_cross_entropy(logits, labels)
-                loss = self.criterion(logits, labels).to(self.device)
+                loss = F.binary_cross_entropy(logits, labels)
+                # loss = self.criterion(logits, labels).to(self.device)
                 loss.backward()
                 self.optimizer.step()
 
                 # print statistics
                 print("Epoch: {}, {}/{}, time: {:.2f}, loss: {:.2f}".format(epoch + 1, i + 1, self.epoch_size, time.time() - start_time, loss.item()))
 
-            self.scheduler.step()
-            self.evaluate()
+                if i + 1 == self.epoch_size:
+                    break
 
-    def evaluate(self):
+            self.scheduler.step()
+            self.evaluate(evaluate_softmax=False)
+
+    def evaluate(self, evaluate_softmax=False):
         """
         It is used for evaluation with binary output
         :return:
@@ -93,7 +106,10 @@ class MyTrainer:
         sentences1 = self.test_dataset["sentence1"]
         sentences2 = self.test_dataset["sentence2"]
 
-        logits = np.zeros((self.nrof_test_samples, 2))
+        if evaluate_softmax:
+            logits = np.zeros((self.nrof_test_samples, 2))
+        else:
+            logits = np.zeros(self.nrof_test_samples)
 
         steps = self.nrof_test_samples // self.batch_size
 
@@ -111,7 +127,10 @@ class MyTrainer:
 
         labels = np.array(self.test_dataset["label"])
 
-        predictions = np.argmax(logits, axis=1)
+        if evaluate_softmax:
+            predictions = np.argmax(logits, axis=1)
+        else:
+            predictions = logits
         tpr, fpr, accuracy, f1 = evaluate_classification(predictions, labels, nrof_folds=10)
 
         print('Accuracy: %2.5f+-%2.5f' % (np.mean(accuracy), np.std(accuracy)))
