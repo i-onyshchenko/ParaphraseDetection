@@ -1,5 +1,53 @@
-# siamese with one hidden layer (768) and tanh actvation
+# siamese with one hidden layer (768) and tanh activation
 # mean of ALL embeddings
 # Epoch: 18
 Accuracy: 0.76690+-0.03268
 F1: 0.83254+-0.02580
+
+# CLS classification with sigmoid on bert-base-cased-mrpc (w/o dropout)
+Epoch:1
+Accuracy: 0.83008+-0.03464
+F1: 0.87448+-0.02778
+
+# CLS classification with sigmoid on bert-base-cased-mrpc, hidden = 768, bs = 256
+        x = torch.mean(inputs[:, :1], dim=1)
+        x = torch.tanh(x)
+        x = self.dropout(x)
+        x = self.hidden_fc(x)
+        x = torch.tanh(x)
+        x = self.dropout(x)
+        x = self.output_layer(x)
+
+        x = torch.sigmoid(x)
+Epoch:1
+Accuracy: 0.83182+-0.03472
+F1: 0.87617+-0.02747
+
+# CLS classification with sigmoid on bert-base-cased-mrpc, hidden = 1024, bs = 256
+        x = torch.mean(inputs[:, :1], dim=1)
+        x = torch.tanh(x)
+        x = self.dropout(x)
+        x = self.hidden_fc(x)
+        x = torch.tanh(x)
+        x = self.dropout(x)
+        x = self.output_layer(x)
+
+        x = torch.sigmoid(x)
+Epoch:1
+Accuracy: 0.83298+-0.03584
+F1: 0.87697+-0.02840
+
+
+# CLS classification with sigmoid on bert-base-cased-mrpc, hidden = 1024, bs = 512
+        x = torch.mean(inputs[:, :1], dim=1)
+        x = torch.tanh(x)
+        x = self.dropout(x)
+        x = self.hidden_fc(x)
+        x = torch.tanh(x)
+        x = self.dropout(x)
+        x = self.output_layer(x)
+
+        x = torch.sigmoid(x)
+Epoch:2
+Accuracy: 0.83298+-0.03479
+F1: 0.87696+-0.02773
