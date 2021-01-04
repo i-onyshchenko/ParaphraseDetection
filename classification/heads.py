@@ -59,14 +59,15 @@ class CosineHead(nn.Module):
 class GLUEHead(nn.Module):
     def __init__(self, input_size=768*4, output_size=2):
         super(GLUEHead, self).__init__()
-        self.fc1 = nn.Linear(input_size // 4, 256)
-        self.fc2 = nn.Linear(input_size // 4, 256)
-        self.fc3 = nn.Linear(input_size // 4, 256)
-        self.fc4 = nn.Linear(256*4, output_size)
-        self.hidden_fc = nn.Linear(input_size, 512)
-        self.output_layer = nn.Linear(512, 1)
-        self.dropout = nn.Dropout(p=0.2)
-        self.batch_norm = nn.BatchNorm1d(256*4)
+        # self.fc1 = nn.Linear(input_size // 4, 256)
+        # self.fc2 = nn.Linear(input_size // 4, 256)
+        # self.fc3 = nn.Linear(input_size // 4, 256)
+        # self.fc4 = nn.Linear(256*4, output_size)
+        self.hidden_fc = nn.Linear(input_size, 1024)
+        self.output_layer = nn.Linear(1024, 1)
+        self.dropout = nn.Dropout(p=0.5)
+        self.batch_norm1 = nn.BatchNorm1d(input_size)
+        self.batch_norm2 = nn.BatchNorm1d(1024)
 
     def forward(self, inputs):
         # original_x1 = torch.mean(inputs[0], dim=1)
@@ -89,9 +90,17 @@ class GLUEHead(nn.Module):
         # x = self.fc4(x)
         # # logits = F.sigmoid(x)
 
-        x = self.hidden_fc(inputs[:, 0])
+        # x = torch.mean(inputs[:, :1], dim=1)
+        x = inputs[:, 0]
+        # x = torch.relu(x)
+        # x = self.dropout(x)
+        # x = self.batch_norm1(x)
+        x = self.hidden_fc(x)
+        x = torch.relu(x)
+        # x = self.dropout(x)
+        # x = self.batch_norm2(x)
         x = self.output_layer(x)
 
-        x = F.sigmoid(x)
+        x = torch.sigmoid(x)
 
         return x.squeeze()

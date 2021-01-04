@@ -1,4 +1,4 @@
-from transformers import AutoTokenizer, AutoModel
+from transformers import AutoTokenizer, AutoModel, AutoModelForPreTraining
 import torch.nn as nn
 from heads import CosineHead, GLUEHead
 import numpy as np
@@ -9,13 +9,19 @@ class Model(nn.Module):
         super(Model, self).__init__()
         self.base_tokenizer = AutoTokenizer.from_pretrained("bert-base-cased-finetuned-mrpc")
         self.base_model = AutoModel.from_pretrained("bert-base-cased-finetuned-mrpc")
+        # self.base_tokenizer = AutoTokenizer.from_pretrained("nlpaueb/legal-bert-small-uncased")
+        # self.base_model = AutoModel.from_pretrained("nlpaueb/legal-bert-small-uncased")
         self.base_embedding_size = 768
         self.last_layer_size = 1
         # self.classification_head = GLUEHead()
         self.classification_head = GLUEHead(input_size=self.base_embedding_size)
         self.device = "cuda"
+        i = 0
         for param in self.base_model.parameters():
-            param.requires_grad = False
+            i += 1
+            param.requires_grad = True
+            # if i == 190:
+            #     break
 
     @property
     def tokenizer(self):
@@ -27,7 +33,7 @@ class Model(nn.Module):
         :param inputs: list of shape (2, batch_size)
         :return: tensor of shape (batch_size, 1)
         """
-        tokens_pair = self.base_tokenizer(inputs[0], inputs[1], truncation=True, padding=True, max_length=128, return_tensors="pt")
+        tokens_pair = self.base_tokenizer(inputs[0], inputs[1], truncation=True, padding=True, max_length=512, return_tensors="pt")
         tokens_pair = {key: value.to(self.device) for key, value in tokens_pair.items()}
         # tokens1 = self.base_tokenizer(inputs[0], truncation=True, padding=True, max_length=128, return_tensors="pt")
         # tokens1 = {key: value.to(self.device) for key, value in tokens1.items()}
@@ -40,6 +46,10 @@ class Model(nn.Module):
         # # logits, embeddings1, embeddings2 = self.classification_head.to(self.device)([embeddings1, embeddings2])
         # logits = self.classification_head.to(self.device)([embeddings1, embeddings2])
         embeddings = self.base_model.to(self.device)(**tokens_pair)[0]
+        # print(tokens_pair["attention_mask"][0])
+        # print(embeddings[0].size())
+        # print(embeddings[0][tokens_pair["attention_mask"][0] == 1].size())
+        # exit()
         logits = self.classification_head.to(self.device)(embeddings)
 
         return logits
