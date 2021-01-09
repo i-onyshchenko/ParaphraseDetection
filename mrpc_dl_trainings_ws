@@ -52,7 +52,7 @@ Epoch:2
 Accuracy: 0.83298+-0.03479
 F1: 0.87696+-0.02773
 
-# CLS classification with sigmoid on bert-base-cased-mrpc, hidden = 1024, bs = 32
+# CLS classification with sigmoid on bert-base-cased-mrpc, hidden = 1024, bs = 16, base_model os trainable, batch_size=16, epochs=100, epoch_size=16
 x = inputs[:, 0]
         # x = torch.relu(x)
         # x = self.dropout(x)
@@ -67,6 +67,37 @@ x = inputs[:, 0]
 Epoch: 18
 Accuracy: 0.83818+-0.03178
 F1: 0.88113+-0.02572
+
 Epoch: 25
 Accuracy: 0.84340+-0.03496
 F1: 0.88564+-0.02730
+
+
+# CLS classification with sigmoid on bert-base-cased-mrpc, hidden = 1024, bs = 16, base_model os trainable, batch_size=12, epochs=100, epoch_size=80
+mean of logits [s1, s2] and [s2, s1]
+x = inputs[:, 0]
+        # x = torch.relu(x)
+        # x = self.dropout(x)
+        # x = self.batch_norm1(x)
+        x = self.hidden_fc(x)
+        x = torch.relu(x)
+        # x = self.dropout(x)
+        # x = self.batch_norm2(x)
+        x = self.output_layer(x)
+
+        x = torch.sigmoid(x)
+Epoch: 11
+Accuracy: 0.84981+-0.02309
+F1: 0.88718+-0.01881
+
+Epoch: 14
+Accuracy: 0.85157+-0.01803
+F1: 0.88886+-0.01670
+
+Epoch: 24
+Accuracy: 0.85039+-0.02438
+F1: 0.89079+-0.01925
+
+Epoch: 36
+Accuracy: 0.85039+-0.02132
+F1: 0.88936+-0.01855

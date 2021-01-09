@@ -92,13 +92,14 @@ class GLUEHead(nn.Module):
 
         # x = torch.mean(inputs[:, :1], dim=1)
         x = inputs[:, 0]
+        # x = self.dropout(x)
         # x = torch.relu(x)
         # x = self.dropout(x)
         # x = self.batch_norm1(x)
         x = self.hidden_fc(x)
         x = torch.relu(x)
         # x = self.dropout(x)
-        # x = self.batch_norm2(x)
+        # x = self.batch_norm2(x) # make it worse
         x = self.output_layer(x)
 
         x = torch.sigmoid(x)

@@ -1,4 +1,4 @@
-# CLS classification with sigmoid on bert-base-cased-mrpc, hidden = 1024, bs = 32
+# CLS classification with sigmoid on bert-base-cased-mrpc, hidden = 1024, batch_size=16, epochs=100, epoch_size=80
 x = inputs[:, 0]
         # x = torch.relu(x)
         # x = self.dropout(x)
@@ -10,6 +10,9 @@ x = inputs[:, 0]
         x = self.output_layer(x)
 
         x = torch.sigmoid(x)
-Epoch: 10
-Accuracy: 0.80381+-0.00646
-F1: 0.74033+-0.00917
+Epoch: 13
+Accuracy: 0.81086+-0.00673
+F1: 0.75464+-0.00869
+Epoch: 15
+Accuracy: 0.81234+-0.00608
+F1: 0.75069+-0.00832
