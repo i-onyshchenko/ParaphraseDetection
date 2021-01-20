@@ -4,10 +4,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from transformers import AdamW
+from transformers.optimization import get_polynomial_decay_schedule_with_warmup
 # import tensorflow_datasets as tfds
 import numpy as np
 import random
 import time
+import datetime
 from tqdm import tqdm
 
 from model import Model
@@ -23,7 +25,7 @@ random.seed(666)
 
 
 class MyTrainer:
-    def __init__(self, model, dataset_name="mrpc", batch_size=12, epochs=100, epoch_size=80):
+    def __init__(self, model, dataset_name="mrpc", batch_size=12, epochs=1, epoch_size=80):
         self.model = model
         self.dataset_name = dataset_name
         self.batch_size = batch_size
@@ -120,6 +122,10 @@ class MyTrainer:
             self.scheduler.step()
             self.evaluate(evaluate_softmax=False)
 
+        date_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        model_path = "/home/ihor/University/DiplomaProject/Program/models/" + date_time + ".pt"
+        torch.save(self.model, model_path)
+
     def evaluate(self, CLS=True, **kwargs):
         if CLS:
             self.evaluate_cls(evaluate_softmax=kwargs.get("evaluate_softmax", False))
@@ -211,3 +217,7 @@ if __name__ == "__main__":
     model = Model()
     trainer = MyTrainer(model)
     trainer.train()
+
+    # model = torch.load("/home/ihor/University/DiplomaProject/Program/models/20210120-232709.pt")
+    # trainer = MyTrainer(model)
+    # trainer.evaluate()

@@ -7,8 +7,10 @@ import numpy as np
 class Model(nn.Module):
     def __init__(self):
         super(Model, self).__init__()
-        self.base_tokenizer = AutoTokenizer.from_pretrained("bert-base-cased-finetuned-mrpc")
-        self.base_model = AutoModel.from_pretrained("bert-base-cased-finetuned-mrpc")
+        # self.base_tokenizer = AutoTokenizer.from_pretrained("bert-base-cased-finetuned-mrpc")
+        # self.base_model = AutoModel.from_pretrained("bert-base-cased-finetuned-mrpc")
+        self.base_tokenizer = AutoTokenizer.from_pretrained("albert-base-v2")
+        self.base_model = AutoModel.from_pretrained("albert-base-v2")
         # self.base_tokenizer = AutoTokenizer.from_pretrained("nlpaueb/legal-bert-small-uncased")
         # self.base_model = AutoModel.from_pretrained("nlpaueb/legal-bert-small-uncased")
         self.base_embedding_size = 768
