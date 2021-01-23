@@ -9,8 +9,17 @@ class Model(nn.Module):
         super(Model, self).__init__()
         # self.base_tokenizer = AutoTokenizer.from_pretrained("bert-base-cased-finetuned-mrpc")
         # self.base_model = AutoModel.from_pretrained("bert-base-cased-finetuned-mrpc")
-        self.base_tokenizer = AutoTokenizer.from_pretrained("albert-base-v2")
-        self.base_model = AutoModel.from_pretrained("albert-base-v2")
+        self.base_tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
+        self.base_model = AutoModel.from_pretrained("bert-base-cased")
+        # self.base_tokenizer = AutoTokenizer.from_pretrained("albert-base-v2")
+        # self.base_model = AutoModel.from_pretrained("albert-base-v2")
+        # self.base_tokenizer = AutoTokenizer.from_pretrained("roberta-base")
+        # self.base_model = AutoModel.from_pretrained("roberta-base")
+        # self.base_tokenizer = AutoTokenizer.from_pretrained("DeBERTa/deberta-base")
+        # self.base_model = AutoModel.from_pretrained("DeBERTa/deberta-base")
+        # self.base_tokenizer = AutoTokenizer.from_pretrained("microsoft/deberta-base")
+        # self.base_model = AutoModel.from_pretrained("microsoft/deberta-base")
+        # print(self.base_model.config)
         # self.base_tokenizer = AutoTokenizer.from_pretrained("nlpaueb/legal-bert-small-uncased")
         # self.base_model = AutoModel.from_pretrained("nlpaueb/legal-bert-small-uncased")
         self.base_embedding_size = 768
@@ -18,12 +27,9 @@ class Model(nn.Module):
         # self.classification_head = GLUEHead()
         self.classification_head = GLUEHead(input_size=self.base_embedding_size)
         self.device = "cuda"
-        i = 0
+
         for param in self.base_model.parameters():
-            i += 1
             param.requires_grad = True
-            # if i == 190:
-            #     break
 
     @property
     def tokenizer(self):

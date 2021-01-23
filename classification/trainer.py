@@ -1,4 +1,4 @@
-from transformers import Trainer, glue_convert_examples_to_features
+# from transformers import Trainer, glue_convert_examples_to_features
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -25,12 +25,14 @@ random.seed(666)
 
 
 class MyTrainer:
-    def __init__(self, model, dataset_name="mrpc", batch_size=12, epochs=1, epoch_size=80):
+    def __init__(self, model, dataset_name="mrpc", batch_size=12, epochs=30, epoch_size=80):
         self.model = model
         self.dataset_name = dataset_name
         self.batch_size = batch_size
         self.epochs = epochs
         self.epoch_size = epoch_size
+        self.pretrain_head = False
+        self.init_epochs = 5
         self.device = torch.device("cuda")
 
         self.model.to(self.device)
@@ -74,12 +76,11 @@ class MyTrainer:
         #      'weight_decay': 0.01},
         #     {'params': [p for n, p in self.model.named_parameters() if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
         # ]
-        # print(self.model.named_parameters())
+        # # print(self.model.named_parameters())
         # self.optimizer = AdamW(optimizer_grouped_parameters, lr=0.001)
         print("Nrof parameters: {}".format(len(list(self.model.parameters()))))
 
-        self.optimizer = optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9)
-
+        self.optimizer = optim.SGD(self.model.parameters(), lr=0.01, momentum=0.09, weight_decay=0.01, nesterov=True)
         self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=5, gamma=0.5)
 
     # def compute_loss(self, inputs):
@@ -89,8 +90,13 @@ class MyTrainer:
     #     return F.softmax(logits, labels)
 
     def train(self):
+        self.pretrain_head = True
+        self.init_epochs = 10
         for epoch in range(self.epochs):  # loop over the dataset multiple times
             self.model.train()
+            if self.pretrain_head:
+                self.finetune_mode(self.init_epochs, epoch)
+
             for i, batch in enumerate(self.train_data_loader):
                 start_time = time.time()
                 # get the inputs; data is a list of [inputs, labels]
@@ -125,6 +131,19 @@ class MyTrainer:
         date_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         model_path = "/home/ihor/University/DiplomaProject/Program/models/" + date_time + ".pt"
         torch.save(self.model, model_path)
+
+    def finetune_mode(self, init_epochs, epoch):
+        if epoch < init_epochs:
+            for param in self.model.base_model.parameters():
+                param.requires_grad = False
+            # self.model.base_model.eval()
+        elif epoch == init_epochs:
+            for param in self.model.base_model.parameters():
+                param.requires_grad = True
+            self.optimizer = optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9, weight_decay=0.01,
+                                       nesterov=True)
+            self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=5, gamma=0.5)
+        self.model.base_model.eval()
 
     def evaluate(self, CLS=True, **kwargs):
         if CLS:
@@ -173,6 +192,7 @@ class MyTrainer:
 
         print('Accuracy: %2.5f+-%2.5f' % (np.mean(accuracy), np.std(accuracy)))
         print('F1: %2.5f+-%2.5f' % (np.mean(f1), np.std(f1)))
+        print()
 
     def evaluate_embeddings(self):
         """
