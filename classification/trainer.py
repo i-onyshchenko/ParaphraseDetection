@@ -80,7 +80,7 @@ class MyTrainer:
         # self.optimizer = AdamW(optimizer_grouped_parameters, lr=0.001)
         print("Nrof parameters: {}".format(len(list(self.model.parameters()))))
 
-        self.optimizer = optim.SGD(self.model.parameters(), lr=0.01, momentum=0.09, weight_decay=0.01, nesterov=True)
+        self.optimizer = optim.SGD(self.model.parameters(), lr=0.01, momentum=0.9, weight_decay=0.01, nesterov=True)
         self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=5, gamma=0.5)
 
     # def compute_loss(self, inputs):
