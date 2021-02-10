@@ -136,10 +136,20 @@ Epoch: 21
 Accuracy: 0.86025+-0.02087
 F1: 0.89232+-0.01905
 
-# bert-base-v2 with head_pretraining(10 epochs, lr=0.01), lr=0.001, nesterov, weight_decay=0.01, momentum=0.9
+# bert-base-v2 (?) with head_pretraining(10 epochs, lr=0.01), lr=0.001, nesterov, weight_decay=0.01, momentum=0.9
 Epoch: 28
 Accuracy: 0.86201+-0.02340
 F1: 0.89648+-0.02057
+
+# mean aggregation
+# bert-base with head_pretraining(10 epochs, lr=0.01), lr=0.001, nesterov, weight_decay=0.01, momentum=0.9
+
+
+# max aggregation
+# bert-base with head_pretraining(10 epochs, lr=0.01), lr=0.001, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 27
+Accuracy: 0.85969+-0.02440
+F1: 0.89701+-0.02076
 
 ############# ALBERT ##############
 # albert-base-v1

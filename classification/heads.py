@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from util.utils import masked_aggregation
 
 
 # use if you wanna evaluating embeddings using some distance, e.g., cosine distance (similarity)
@@ -13,7 +14,7 @@ class CosineHead(nn.Module):
         self.dropout = nn.Dropout(p=0.5)
         self.batch_norm = nn.BatchNorm1d(256 * 4)
 
-    def forward(self, inputs):
+    def forward(self, inputs, attentions=None):
         """
 
         :param inputs: list (shape (2,)) of tensors (batch_size, seq_len, embedding_size)
@@ -69,7 +70,7 @@ class GLUEHead(nn.Module):
         self.batch_norm1 = nn.BatchNorm1d(input_size)
         self.batch_norm2 = nn.BatchNorm1d(1024)
 
-    def forward(self, inputs):
+    def forward(self, inputs, attentions=None):
         # original_x1 = torch.mean(inputs[0], dim=1)
         # # original_x1 = inputs[0][:, 0]
         # original_x2 = torch.mean(inputs[1], dim=1)
@@ -91,7 +92,9 @@ class GLUEHead(nn.Module):
         # # logits = F.sigmoid(x)
 
         # x = torch.mean(inputs[:, :1], dim=1)
-        x = inputs[:, 0]
+        # print(inputs[0])
+        x = masked_aggregation(inputs, attentions, "max")
+        # x = inputs[:, 0]
         # x = self.dropout(x)
         # x = torch.relu(x)
         # x = self.dropout(x)

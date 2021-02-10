@@ -9,12 +9,12 @@ class Model(nn.Module):
         super(Model, self).__init__()
         # self.base_tokenizer = AutoTokenizer.from_pretrained("bert-base-cased-finetuned-mrpc")
         # self.base_model = AutoModel.from_pretrained("bert-base-cased-finetuned-mrpc")
-        # self.base_tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
-        # self.base_model = AutoModel.from_pretrained("bert-base-cased")
+        self.base_tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
+        self.base_model = AutoModel.from_pretrained("bert-base-cased")
         # self.base_tokenizer = AutoTokenizer.from_pretrained("albert-base-v2")
         # self.base_model = AutoModel.from_pretrained("albert-base-v2")
-        self.base_tokenizer = AutoTokenizer.from_pretrained("roberta-base")
-        self.base_model = AutoModel.from_pretrained("roberta-base")
+        # self.base_tokenizer = AutoTokenizer.from_pretrained("roberta-base")
+        # self.base_model = AutoModel.from_pretrained("roberta-base")
         # self.base_tokenizer = AutoTokenizer.from_pretrained("DeBERTa/deberta-base")
         # self.base_model = AutoModel.from_pretrained("DeBERTa/deberta-base")
         # self.base_tokenizer = AutoTokenizer.from_pretrained("microsoft/deberta-base")
@@ -47,6 +47,7 @@ class Model(nn.Module):
         tokens_pair = self.base_tokenizer(inputs[0], inputs[1], truncation=True, padding=True, max_length=512,
                                           return_tensors="pt")
         tokens_pair = {key: value.to(self.device) for key, value in tokens_pair.items()}
+        # print(tokens_pair["attention_mask"])
         # tokens1 = self.base_tokenizer(inputs[0], truncation=True, padding=True, max_length=128, return_tensors="pt")
         # tokens1 = {key: value.to(self.device) for key, value in tokens1.items()}
         # tokens2 = self.base_tokenizer(inputs[1], truncation=True, padding=True, max_length=128, return_tensors="pt")
@@ -58,14 +59,14 @@ class Model(nn.Module):
         # # logits, embeddings1, embeddings2 = self.classification_head.to(self.device)([embeddings1, embeddings2])
         # logits = self.classification_head.to(self.device)([embeddings1, embeddings2])
         embeddings = self.base_model.to(self.device)(**tokens_pair)[0]
-        logits = self.classification_head.to(self.device)(embeddings)
+        logits = self.classification_head.to(self.device)(embeddings, attentions=tokens_pair["attention_mask"])
 
         if swap_inputs:
             tokens_pair2 = self.base_tokenizer(inputs[1], inputs[0], truncation=True, padding=True, max_length=512,
                                               return_tensors="pt")
             tokens_pair2 = {key: value.to(self.device) for key, value in tokens_pair2.items()}
             embeddings2 = self.base_model.to(self.device)(**tokens_pair2)[0]
-            logits2 = self.classification_head.to(self.device)(embeddings2)
+            logits2 = self.classification_head.to(self.device)(embeddings2, attentions=tokens_pair2["attention_mask"])
 
             return (logits + logits2) / 2
 
