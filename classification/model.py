@@ -25,7 +25,8 @@ class Model(nn.Module):
         self.base_embedding_size = 768
         self.last_layer_size = 1
         # self.classification_head = GLUEHead()
-        self.classification_head = GLUEHead(input_size=self.base_embedding_size)
+        # self.classification_head = GLUEHead(input_size=self.base_embedding_size)
+        self.classification_head = CosineHead(input_size=self.base_embedding_size)
         self.device = "cuda"
 
         for param in self.base_model.parameters():
@@ -35,44 +36,47 @@ class Model(nn.Module):
     def tokenizer(self):
         return self.base_tokenizer
 
-    def forward(self, inputs):
+    def forward(self, inputs, siam=False):
         """
 
         :param inputs: list of shape (2, batch_size)
+        :param siam: flag to use siamese network
         :return: tensor of shape (batch_size, 1)
         """
+        if siam:
+            tokens1 = self.base_tokenizer(inputs[0], truncation=True, padding=True, max_length=128, return_tensors="pt")
+            tokens1 = {key: value.to(self.device) for key, value in tokens1.items()}
+            tokens2 = self.base_tokenizer(inputs[1], truncation=True, padding=True, max_length=128, return_tensors="pt")
+            tokens2 = {key: value.to(self.device) for key, value in tokens2.items()}
+            embeddings1 = self.base_model.to(self.device)(**tokens1)[0]
+            embeddings2 = self.base_model.to(self.device)(**tokens2)[0]
 
-        swap_inputs = True
+            # use this line if head returns its own embeddings
+            # logits, embeddings1, embeddings2 = self.classification_head.to(self.device)([embeddings1, embeddings2])
+            attentions = [tokens1["attention_mask"], tokens2["attention_mask"]]
+            logits = self.classification_head.to(self.device)([embeddings1, embeddings2], attentions=attentions)
+        else:
+            swap_inputs = True
 
-        tokens_pair = self.base_tokenizer(inputs[0], inputs[1], truncation=True, padding=True, max_length=512,
-                                          return_tensors="pt")
-        tokens_pair = {key: value.to(self.device) for key, value in tokens_pair.items()}
-        # print(tokens_pair["attention_mask"])
-        # tokens1 = self.base_tokenizer(inputs[0], truncation=True, padding=True, max_length=128, return_tensors="pt")
-        # tokens1 = {key: value.to(self.device) for key, value in tokens1.items()}
-        # tokens2 = self.base_tokenizer(inputs[1], truncation=True, padding=True, max_length=128, return_tensors="pt")
-        # tokens2 = {key: value.to(self.device) for key, value in tokens2.items()}
-        # embeddings1 = self.base_model.to(self.device)(**tokens1)[0]
-        # embeddings2 = self.base_model.to(self.device)(**tokens2)[0]
-        #
-        # # use this line if head returns its own embeddings
-        # # logits, embeddings1, embeddings2 = self.classification_head.to(self.device)([embeddings1, embeddings2])
-        # logits = self.classification_head.to(self.device)([embeddings1, embeddings2])
-        embeddings = self.base_model.to(self.device)(**tokens_pair)[0]
-        logits = self.classification_head.to(self.device)(embeddings, attentions=tokens_pair["attention_mask"])
-
-        if swap_inputs:
-            tokens_pair2 = self.base_tokenizer(inputs[1], inputs[0], truncation=True, padding=True, max_length=512,
+            tokens_pair = self.base_tokenizer(inputs[0], inputs[1], truncation=True, padding=True, max_length=512,
                                               return_tensors="pt")
-            tokens_pair2 = {key: value.to(self.device) for key, value in tokens_pair2.items()}
-            embeddings2 = self.base_model.to(self.device)(**tokens_pair2)[0]
-            logits2 = self.classification_head.to(self.device)(embeddings2, attentions=tokens_pair2["attention_mask"])
+            tokens_pair = {key: value.to(self.device) for key, value in tokens_pair.items()}
+            # print(tokens_pair["attention_mask"])
+            embeddings = self.base_model.to(self.device)(**tokens_pair)[0]
+            logits = self.classification_head.to(self.device)(embeddings, attentions=tokens_pair["attention_mask"])
 
-            return (logits + logits2) / 2
+            if swap_inputs:
+                tokens_pair2 = self.base_tokenizer(inputs[1], inputs[0], truncation=True, padding=True, max_length=512,
+                                                  return_tensors="pt")
+                tokens_pair2 = {key: value.to(self.device) for key, value in tokens_pair2.items()}
+                embeddings2 = self.base_model.to(self.device)(**tokens_pair2)[0]
+                logits2 = self.classification_head.to(self.device)(embeddings2, attentions=tokens_pair2["attention_mask"])
 
-        # print(tokens_pair["attention_mask"][0])
-        # print(embeddings[0].size())
-        # print(embeddings[0][tokens_pair["attention_mask"][0] == 1].size())
+                return (logits + logits2) / 2
+
+            # print(tokens_pair["attention_mask"][0])
+            # print(embeddings[0].size())
+            # print(embeddings[0][tokens_pair["attention_mask"][0] == 1].size())
 
         return logits
 

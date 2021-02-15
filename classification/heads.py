@@ -12,7 +12,8 @@ class CosineHead(nn.Module):
         self.fc2 = nn.Linear(512, 256)
         self.fc3 = nn.Linear(256, 128)
         self.dropout = nn.Dropout(p=0.5)
-        self.batch_norm = nn.BatchNorm1d(256 * 4)
+        # self.batch_norm = nn.BatchNorm1d(256 * 4)
+        self.aggregation_type = "CLS"
 
     def forward(self, inputs, attentions=None):
         """
@@ -21,8 +22,10 @@ class CosineHead(nn.Module):
         :return: tensor of shape (batch_size,)
         """
 
-        sentences1 = torch.mean(inputs[0], dim=1)
-        sentences2 = torch.mean(inputs[1], dim=1)
+        sentences1 = masked_aggregation(inputs[0], attentions[0], self.aggregation_type)
+        sentences2 = masked_aggregation(inputs[1], attentions[1], self.aggregation_type)
+        # sentences1 = torch.mean(inputs[0], dim=1)
+        # sentences2 = torch.mean(inputs[1], dim=1)
 
         # Branch for Sentence 1
         x1 = self.fc1(sentences1)
@@ -67,8 +70,9 @@ class GLUEHead(nn.Module):
         self.hidden_fc = nn.Linear(input_size, 1024)
         self.output_layer = nn.Linear(1024, 1)
         self.dropout = nn.Dropout(p=0.5)
-        self.batch_norm1 = nn.BatchNorm1d(input_size)
-        self.batch_norm2 = nn.BatchNorm1d(1024)
+        # self.batch_norm1 = nn.BatchNorm1d(input_size)
+        # self.batch_norm2 = nn.BatchNorm1d(1024)
+        self.aggregation_type = "mean"
 
     def forward(self, inputs, attentions=None):
         # original_x1 = torch.mean(inputs[0], dim=1)
@@ -93,7 +97,7 @@ class GLUEHead(nn.Module):
 
         # x = torch.mean(inputs[:, :1], dim=1)
         # print(inputs[0])
-        x = masked_aggregation(inputs, attentions, "max")
+        x = masked_aggregation(inputs, attentions, self.aggregation_type)
         # x = inputs[:, 0]
         # x = self.dropout(x)
         # x = torch.relu(x)
