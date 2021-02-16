@@ -10,7 +10,7 @@ class CosineHead(nn.Module):
         super(CosineHead, self).__init__()
         self.fc1 = nn.Linear(input_size, 512)
         self.fc2 = nn.Linear(512, 256)
-        self.fc3 = nn.Linear(256, 128)
+        # self.fc3 = nn.Linear(256, 128)
         self.dropout = nn.Dropout(p=0.5)
         # self.batch_norm = nn.BatchNorm1d(256 * 4)
         self.aggregation_type = "CLS"
@@ -19,6 +19,7 @@ class CosineHead(nn.Module):
         """
 
         :param inputs: list (shape (2,)) of tensors (batch_size, seq_len, embedding_size)
+        :param attentions: list (shape (2,)) of tensors (batch_size, seq_len)
         :return: tensor of shape (batch_size,)
         """
 
@@ -28,36 +29,46 @@ class CosineHead(nn.Module):
         # sentences2 = torch.mean(inputs[1], dim=1)
 
         # Branch for Sentence 1
-        x1 = self.fc1(sentences1)
-        x1 = torch.tanh(x1)
-        x1 = self.dropout(x1)
-
-        x1 = self.fc2(x1)
-        x1 = torch.tanh(x1)
-        x1 = self.dropout(x1)
-
-        x1 = self.fc3(x1)
-        x1 = torch.tanh(x1)
+        x1 = sentences1
+        # x1 = self.fc1(sentences1)
+        # x1 = torch.tanh(x1)
+        # x1 = self.dropout(x1)
+        #
+        # x1 = self.fc2(x1)
+        # x1 = torch.tanh(x1)
+        # x1 = self.dropout(x1)
+        #
+        # x1 = self.fc3(x1)
+        # x1 = torch.tanh(x1)
+        # x1 = torch.relu(x1)
+        # x1 = self.fc2(x1)
+        # x1 = torch.tanh(x1)
 
         # Branch for Sentence 2
-        x2 = self.fc1(sentences2)
-        x2 = torch.tanh(x2)
-        x2 = self.dropout(x2)
-
-        x2 = self.fc2(x2)
-        x2 = torch.tanh(x2)
-        x2 = self.dropout(x2)
-
-        x2 = self.fc3(x2)
-        x2 = torch.tanh(x2)
+        x2 = sentences2
+        # x2 = self.fc1(sentences2)
+        # x2 = torch.tanh(x2)
+        # x2 = self.dropout(x2)
+        #
+        # x2 = self.fc2(x2)
+        # x2 = torch.tanh(x2)
+        # x2 = self.dropout(x2)
+        #
+        # x2 = self.fc3(x2)
+        # x2 = torch.tanh(x2)
+        # x2 = torch.relu(x2)
+        # x2 = self.fc2(x2)
+        # x2 = torch.tanh(x2)
 
         # Comparison of embeddings
         # 1 - paraphrase, 0 - otherwise
-        score = F.cosine_similarity(x1, x2)
+        # score = F.cosine_similarity(x1, x2)
+        # print(score)
         # to clip negative values
-        score = torch.relu(score)
+        # score = torch.relu(score)
+        # print(score)
 
-        return score
+        return None, x1, x2
 
 
 class GLUEHead(nn.Module):
@@ -111,4 +122,4 @@ class GLUEHead(nn.Module):
 
         x = torch.sigmoid(x)
 
-        return x.squeeze()
+        return x.squeeze(), None, None

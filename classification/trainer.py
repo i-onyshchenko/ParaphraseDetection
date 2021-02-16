@@ -27,6 +27,7 @@ random.seed(666)
 class MyTrainer:
     def __init__(self, model, dataset_name="mrpc", batch_size=12, epochs=30, epoch_size=80):
         self.model = model
+        self.siam = True
         self.dataset_name = dataset_name
         self.batch_size = batch_size
         self.epochs = epochs
@@ -68,7 +69,7 @@ class MyTrainer:
         print("Samples in test_set: {}".format(self.nrof_test_samples))
 
         # for logits of size (batch_size, nrof_classes)
-        self.criterion = nn.CrossEntropyLoss()
+        # self.criterion = nn.CrossEntropyLoss()
 
         # no_decay = ['bias', 'LayerNorm.weight']
         # optimizer_grouped_parameters = [
@@ -90,7 +91,7 @@ class MyTrainer:
     #     return F.softmax(logits, labels)
 
     def train(self):
-        self.pretrain_head = True
+        self.pretrain_head = False
         self.init_epochs = 10
         for epoch in range(self.epochs):  # loop over the dataset multiple times
             self.model.train()
@@ -106,27 +107,36 @@ class MyTrainer:
 
                 inputs = [sentences1, sentences2]
 
-                labels = torch.as_tensor(batch['label'], dtype=torch.float, device=self.device)
-
-                logits = self.model.forward(inputs)
+                if self.siam:
+                    _, embeddings1, embeddings2 = self.model.forward(inputs)
+                else:
+                    logits, _, _ = self.model.forward(inputs)
 
                 # zero the parameter gradients
                 self.optimizer.zero_grad()
 
-                loss = F.binary_cross_entropy(logits, labels)
+                if self.siam:
+                    # labels[i] \in {1, -1}
+                    labels = torch.as_tensor(batch['label'] * 2 - 1, dtype=torch.float, device=self.device)
+                    # loss = nn.CosineEmbeddingLoss(embeddings1, embeddings2, labels).to(self.device)
+                    loss = F.cosine_embedding_loss(embeddings1, embeddings2, labels, margin=0.0)
+                else:
+                    # labels[i] in {1, 0}
+                    labels = torch.as_tensor(batch['label'], dtype=torch.float, device=self.device)
+                    loss = F.binary_cross_entropy(logits, labels)
                 # loss = self.criterion(logits, labels).to(self.device)
                 loss.backward()
                 self.optimizer.step()
 
                 if i % 10 == 0:
                     # print statistics
-                    print("Epoch: {}, {}/{}, time: {:.2f}, loss: {:.2f}".format(epoch + 1, i + 1, self.epoch_size, time.time() - start_time, loss.item()))
+                    print("Epoch: {}, {}/{}, time: {:.2f}, loss: {:.6f}".format(epoch + 1, i + 1, self.epoch_size, time.time() - start_time, loss.item()))
 
                 if i + 1 == self.epoch_size:
                     break
 
             self.scheduler.step()
-            self.evaluate(evaluate_softmax=False)
+            self.evaluate(CLS=not self.siam, evaluate_softmax=False)
 
         date_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         model_path = "/home/ihor/University/DiplomaProject/Program/models/" + date_time + ".pt"
@@ -208,7 +218,7 @@ class MyTrainer:
         embeddings1 = np.zeros((self.nrof_test_samples, self.model.output_size))
         embeddings2 = np.zeros((self.nrof_test_samples, self.model.output_size))
 
-        batch_size = 128
+        batch_size = 256
         steps = self.nrof_test_samples // batch_size
 
         # include last small batch if necessary

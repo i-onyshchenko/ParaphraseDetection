@@ -40,11 +40,11 @@ def evaluate_classification(logits, labels, nrof_folds=10):
 
 def evaluate_embeddings(sentences1, sentences2, labels, nrof_folds=10, distance_metric=0, subtract_mean=False):
     # Calculate evaluation metrics
-    thresholds = np.arange(0, 4, 0.01)
+    thresholds = np.arange(0.5, 2.0, 0.0001)
     tpr, fpr, accuracy, f1 = calculate_roc(thresholds, sentences1, sentences2,
                                                np.asarray(labels), nrof_folds=nrof_folds,
                                                distance_metric=distance_metric, subtract_mean=subtract_mean)
-    thresholds = np.arange(0, 4, 0.001)
+    # thresholds = np.arange(0, 4, 0.001)
     # val, val_std, far = calculate_val(thresholds, sentences1, sentences2,
     #                                           np.asarray(labels), 1e-3, nrof_folds=nrof_folds,
     #                                           distance_metric=distance_metric, subtract_mean=subtract_mean)
@@ -98,10 +98,8 @@ def calculate_roc(thresholds, embeddings1, embeddings2, actual_issame, nrof_fold
             _, _, acc_train[threshold_idx], f1_train[threshold_idx] = calculate_accuracy(threshold, dist[train_set], actual_issame[train_set])
         best_threshold_index = np.argmax(acc_train)
         for threshold_idx, threshold in enumerate(thresholds):
-            tprs[fold_idx, threshold_idx], fprs[fold_idx, threshold_idx], _, _ = calculate_accuracy(threshold,
-                                                                                                 dist[test_set],
-                                                                                                 actual_issame[
-                                                                                                     test_set])
+            tprs[fold_idx, threshold_idx], fprs[fold_idx, threshold_idx], _, _ = calculate_accuracy(threshold, dist[test_set],
+                                                                                                 actual_issame[test_set])
         _, _, accuracy[fold_idx], f1[fold_idx] = calculate_accuracy(thresholds[best_threshold_index], dist[test_set],
                                                       actual_issame[test_set])
 
