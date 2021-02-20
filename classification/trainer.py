@@ -15,6 +15,7 @@ from tqdm import tqdm
 from model import Model
 from nlp import load_dataset
 from evaluation_utils import evaluate_classification, evaluate_embeddings
+from utils import get_triplets
 
 torch.manual_seed(666)
 torch.cuda.manual_seed(666)
@@ -28,6 +29,9 @@ class MyTrainer:
     def __init__(self, model, dataset_name="mrpc", batch_size=12, epochs=30, epoch_size=80):
         self.model = model
         self.siam = True
+        self.use_triplet = True
+        if self.use_triplet:
+            self.triplet_loss = nn.TripletMarginWithDistanceLoss(distance_function=lambda x, y: 1.0 - F.cosine_similarity(x, y), margin=0.5)
         self.dataset_name = dataset_name
         self.batch_size = batch_size
         self.epochs = epochs
@@ -116,10 +120,19 @@ class MyTrainer:
                 self.optimizer.zero_grad()
 
                 if self.siam:
-                    # labels[i] \in {1, -1}
-                    labels = torch.as_tensor(batch['label'] * 2 - 1, dtype=torch.float, device=self.device)
-                    # loss = nn.CosineEmbeddingLoss(embeddings1, embeddings2, labels).to(self.device)
-                    loss = F.cosine_embedding_loss(embeddings1, embeddings2, labels, margin=0.0)
+                    if self.use_triplet:
+                        labels = list(batch['label'])
+                        if labels.count(1) > 0:
+                            anchor, positive, negative = get_triplets(embeddings1, embeddings2, labels)
+                            loss = self.triplet_loss(anchor, positive, negative)
+                        else:
+                            i -= 1
+                            continue
+                    else:
+                        # labels[i] \in {1, -1}
+                        labels = torch.as_tensor(batch['label'] * 2 - 1, dtype=torch.float, device=self.device)
+                        # loss = nn.CosineEmbeddingLoss(embeddings1, embeddings2, labels).to(self.device)
+                        loss = F.cosine_embedding_loss(embeddings1, embeddings2, labels, margin=0.5)
                 else:
                     # labels[i] in {1, 0}
                     labels = torch.as_tensor(batch['label'], dtype=torch.float, device=self.device)

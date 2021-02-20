@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 
 
 def masked_aggregation(batch, mask, func="mean"):
@@ -21,3 +22,33 @@ def masked_aggregation(batch, mask, func="mean"):
         batch_res = batch[:, 0]
 
     return batch_res
+
+
+def get_triplets(embeddings1, embeddings2, labels):
+    '''
+    :param embeddings1: torch.tensor of shape (bs, emb_size)
+    :param embeddings2: torch.tensor of shape (bs, emb_size)
+    :param labels: list of labels
+    :return: torch.tensor of shape (bs, emb_size), torch.tensor of shape (bs, emb_size), torch.tensor of shape (bs, emb_size)
+    '''
+
+    nrof_labels = len(labels)
+    labels = np.array(labels)
+    positive_indices = np.where(labels == 1)[0]
+    if positive_indices.empty():
+        raise Exception("No anchors!")
+
+    # for each positive pair let's create 4 triplets:
+    # (pos1, pos2, neg1), (pos1, pos2, neg2), (pos2, pos1, neg1), (pos2, pos1, neg2)
+    anchors, positive, negative = [], [], []
+    for pos_index in positive_indices:
+        neg_index = (pos_index + 1) % nrof_labels
+        anchors += [embeddings1[pos_index], embeddings1[pos_index], embeddings2[pos_index], embeddings2[pos_index]]
+        positive += [embeddings2[pos_index], embeddings2[pos_index], embeddings1[pos_index], embeddings1[pos_index]]
+        negative += [embeddings1[neg_index], embeddings2[neg_index], embeddings1[neg_index], embeddings2[neg_index]]
+
+    return torch.cat(anchors), torch.cat(positive), torch.cat(negative)
+
+
+
+

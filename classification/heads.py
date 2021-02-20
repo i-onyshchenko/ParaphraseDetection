@@ -13,7 +13,7 @@ class CosineHead(nn.Module):
         # self.fc3 = nn.Linear(256, 128)
         self.dropout = nn.Dropout(p=0.5)
         # self.batch_norm = nn.BatchNorm1d(256 * 4)
-        self.aggregation_type = "CLS"
+        self.aggregation_type = "mean"
 
     def forward(self, inputs, attentions=None):
         """
