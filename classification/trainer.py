@@ -15,7 +15,7 @@ from tqdm import tqdm
 from model import Model
 from nlp import load_dataset
 from evaluation_utils import evaluate_classification, evaluate_embeddings
-from utils import get_triplets
+from util.utils import get_triplets
 
 torch.manual_seed(666)
 torch.cuda.manual_seed(666)
@@ -37,7 +37,7 @@ class MyTrainer:
         self.epochs = epochs
         self.epoch_size = epoch_size
         self.pretrain_head = False
-        self.init_epochs = 5
+        self.init_epochs = 10
         self.device = torch.device("cuda")
 
         self.model.to(self.device)
@@ -95,8 +95,8 @@ class MyTrainer:
     #     return F.softmax(logits, labels)
 
     def train(self):
-        self.pretrain_head = False
-        self.init_epochs = 10
+        # self.pretrain_head = False
+        # self.init_epochs = 10
         for epoch in range(self.epochs):  # loop over the dataset multiple times
             self.model.train()
             if self.pretrain_head:

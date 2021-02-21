@@ -35,7 +35,7 @@ def get_triplets(embeddings1, embeddings2, labels):
     nrof_labels = len(labels)
     labels = np.array(labels)
     positive_indices = np.where(labels == 1)[0]
-    if positive_indices.empty():
+    if positive_indices.size == 0:
         raise Exception("No anchors!")
 
     # for each positive pair let's create 4 triplets:
@@ -47,7 +47,7 @@ def get_triplets(embeddings1, embeddings2, labels):
         positive += [embeddings2[pos_index], embeddings2[pos_index], embeddings1[pos_index], embeddings1[pos_index]]
         negative += [embeddings1[neg_index], embeddings2[neg_index], embeddings1[neg_index], embeddings2[neg_index]]
 
-    return torch.cat(anchors), torch.cat(positive), torch.cat(negative)
+    return torch.stack(anchors), torch.stack(positive), torch.stack(negative)
 
 
 
