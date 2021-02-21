@@ -13,7 +13,7 @@ class CosineHead(nn.Module):
         # self.fc3 = nn.Linear(256, 128)
         self.dropout = nn.Dropout(p=0.5)
         # self.batch_norm = nn.BatchNorm1d(256 * 4)
-        self.aggregation_type = "mean"
+        self.aggregation_type = "CLS"
 
     def forward(self, inputs, attentions=None):
         """
@@ -83,7 +83,7 @@ class GLUEHead(nn.Module):
         self.dropout = nn.Dropout(p=0.5)
         # self.batch_norm1 = nn.BatchNorm1d(input_size)
         # self.batch_norm2 = nn.BatchNorm1d(1024)
-        self.aggregation_type = "mean"
+        self.aggregation_type = "CLS"
 
     def forward(self, inputs, attentions=None):
         # original_x1 = torch.mean(inputs[0], dim=1)

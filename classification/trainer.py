@@ -202,7 +202,7 @@ class MyTrainer:
             for i in tqdm(range(steps)):
                 inputs = [sentences1[i * self.batch_size:(i + 1) * self.batch_size],
                           sentences2[i * self.batch_size:(i + 1) * self.batch_size]]
-                batch_logits = self.model.to(self.device).forward(inputs)
+                batch_logits, _, _ = self.model.to(self.device).forward(inputs)
                 logits[i * self.batch_size:(i + 1) * self.batch_size] = batch_logits.cpu()
 
         labels = np.array(self.test_dataset["label"])
@@ -211,11 +211,11 @@ class MyTrainer:
             predictions = np.argmax(logits, axis=1)
         else:
             predictions = logits
-        tpr, fpr, accuracy, f1 = evaluate_classification(predictions, labels, nrof_folds=10)
+        tpr, fpr, accuracy, f1, best_thresholds = evaluate_classification(predictions, labels, nrof_folds=10)
 
         print('Accuracy: %2.5f+-%2.5f' % (np.mean(accuracy), np.std(accuracy)))
         print('F1: %2.5f+-%2.5f' % (np.mean(f1), np.std(f1)))
-        print()
+        print('Best threshold: %2.5f+-%2.5f' % (np.mean(best_thresholds), np.std(best_thresholds)))
 
     def evaluate_embeddings(self):
         """
@@ -247,12 +247,13 @@ class MyTrainer:
 
         labels = np.array(self.test_dataset["label"])
 
-        tpr, fpr, accuracy, f1, val, val_std, far = evaluate_embeddings(embeddings1, embeddings2, labels, nrof_folds=10,
+        tpr, fpr, accuracy, f1, best_thresholds = evaluate_embeddings(embeddings1, embeddings2, labels, nrof_folds=10,
                                                              distance_metric=1,
                                                              subtract_mean=False)
 
         print('Accuracy: %2.5f+-%2.5f' % (np.mean(accuracy), np.std(accuracy)))
         print('F1: %2.5f+-%2.5f' % (np.mean(f1), np.std(f1)))
+        print('Best threshold: %2.5f+-%2.5f' % (np.mean(best_thresholds), np.std(best_thresholds)))
         # print('Validation rate: %2.5f+-%2.5f @ FAR=%2.5f' % (val, val_std, far))
 
 

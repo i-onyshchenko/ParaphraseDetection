@@ -1,5 +1,4 @@
 import numpy as np
-import math
 from sklearn.model_selection import KFold
 from scipy import interpolate
 
@@ -14,6 +13,7 @@ def evaluate_classification(logits, labels, nrof_folds=10):
     fprs = np.zeros((nrof_folds, nrof_thresholds))
     accuracy = np.zeros((nrof_folds))
     f1 = np.zeros((nrof_folds))
+    best_thresholds = np.zeros((nrof_folds))
 
     indices = np.arange(nrof_pairs)
 
@@ -22,34 +22,35 @@ def evaluate_classification(logits, labels, nrof_folds=10):
         acc_train = np.zeros((nrof_thresholds))
         f1_train = np.zeros((nrof_thresholds))
         for threshold_idx, threshold in enumerate(thresholds):
-            _, _, acc_train[threshold_idx], f1_train[threshold_idx] = calculate_accuracy(threshold, logits[train_set],
+            _, _, acc_train[threshold_idx], f1_train[threshold_idx] = calculate_accuracy_for_classification(threshold, logits[train_set],
                                                                                          labels[train_set])
         best_threshold_index = np.argmax(acc_train)
+        best_thresholds[fold_idx] = thresholds[best_threshold_index]
         for threshold_idx, threshold in enumerate(thresholds):
-            tprs[fold_idx, threshold_idx], fprs[fold_idx, threshold_idx], _, _ = calculate_accuracy(threshold,
+            tprs[fold_idx, threshold_idx], fprs[fold_idx, threshold_idx], _, _ = calculate_accuracy_for_classification(threshold,
                                                                                                     logits[test_set],
                                                                                                     labels[test_set])
-        _, _, accuracy[fold_idx], f1[fold_idx] = calculate_accuracy(thresholds[best_threshold_index], logits[test_set],
+        _, _, accuracy[fold_idx], f1[fold_idx] = calculate_accuracy_for_classification(thresholds[best_threshold_index], logits[test_set],
                                                                     labels[test_set])
 
     tpr = np.mean(tprs, 0)
     fpr = np.mean(fprs, 0)
 
-    return tpr, fpr, accuracy, f1
+    return tpr, fpr, accuracy, f1, best_thresholds
 
 
 def evaluate_embeddings(sentences1, sentences2, labels, nrof_folds=10, distance_metric=0, subtract_mean=False):
     # Calculate evaluation metrics
-    thresholds = np.arange(0.5, 2.0, 0.0001)
-    tpr, fpr, accuracy, f1 = calculate_roc(thresholds, sentences1, sentences2,
+    thresholds = np.arange(0.0, 2.0, 0.0001)
+    tpr, fpr, accuracy, f1, best_thresholds = calculate_roc(thresholds, sentences1, sentences2,
                                                np.asarray(labels), nrof_folds=nrof_folds,
                                                distance_metric=distance_metric, subtract_mean=subtract_mean)
     # thresholds = np.arange(0, 4, 0.001)
     # val, val_std, far = calculate_val(thresholds, sentences1, sentences2,
     #                                           np.asarray(labels), 1e-3, nrof_folds=nrof_folds,
     #                                           distance_metric=distance_metric, subtract_mean=subtract_mean)
-    val, val_std, far = 0, 0, 0
-    return tpr, fpr, accuracy, f1, val, val_std, far
+
+    return tpr, fpr, accuracy, f1, best_thresholds
 
 
 def distance(embeddings1, embeddings2, distance_metric=0):
@@ -62,7 +63,7 @@ def distance(embeddings1, embeddings2, distance_metric=0):
         dot = np.sum(np.multiply(embeddings1, embeddings2), axis=1)
         norm = np.linalg.norm(embeddings1, axis=1) * np.linalg.norm(embeddings2, axis=1)
         similarity = dot / norm
-        dist = similarity  # np.arccos(similarity) / math.pi
+        dist = 1 - similarity  # np.arccos(similarity) / math.pi
     else:
         raise 'Undefined distance metric %d' % distance_metric
 
@@ -81,6 +82,7 @@ def calculate_roc(thresholds, embeddings1, embeddings2, actual_issame, nrof_fold
     fprs = np.zeros((nrof_folds, nrof_thresholds))
     accuracy = np.zeros((nrof_folds))
     f1 = np.zeros((nrof_folds))
+    best_thresholds = np.zeros((nrof_folds))
 
     indices = np.arange(nrof_pairs)
 
@@ -97,6 +99,7 @@ def calculate_roc(thresholds, embeddings1, embeddings2, actual_issame, nrof_fold
         for threshold_idx, threshold in enumerate(thresholds):
             _, _, acc_train[threshold_idx], f1_train[threshold_idx] = calculate_accuracy(threshold, dist[train_set], actual_issame[train_set])
         best_threshold_index = np.argmax(acc_train)
+        best_thresholds[fold_idx] = thresholds[best_threshold_index]
         for threshold_idx, threshold in enumerate(thresholds):
             tprs[fold_idx, threshold_idx], fprs[fold_idx, threshold_idx], _, _ = calculate_accuracy(threshold, dist[test_set],
                                                                                                  actual_issame[test_set])
@@ -106,11 +109,25 @@ def calculate_roc(thresholds, embeddings1, embeddings2, actual_issame, nrof_fold
     tpr = np.mean(tprs, 0)
     fpr = np.mean(fprs, 0)
 
-    return tpr, fpr, accuracy, f1
+    return tpr, fpr, accuracy, f1, best_thresholds
+
+
+def calculate_accuracy_for_classification(threshold, similarity, actual_issame):
+    predict_issame = np.greater(similarity, threshold)
+    tp = np.sum(np.logical_and(predict_issame, actual_issame))
+    fp = np.sum(np.logical_and(predict_issame, np.logical_not(actual_issame)))
+    tn = np.sum(np.logical_and(np.logical_not(predict_issame), np.logical_not(actual_issame)))
+    fn = np.sum(np.logical_and(np.logical_not(predict_issame), actual_issame))
+
+    tpr = 0 if (tp + fn == 0) else float(tp) / float(tp + fn)
+    fpr = 0 if (fp + tn == 0) else float(fp) / float(fp + tn)
+    f1 = tp / (tp + 0.5*(fp + fn))
+    acc = float(tp + tn) / similarity.size
+    return tpr, fpr, acc, f1
 
 
 def calculate_accuracy(threshold, dist, actual_issame):
-    predict_issame = np.greater(dist, threshold)
+    predict_issame = np.less(dist, threshold)
     tp = np.sum(np.logical_and(predict_issame, actual_issame))
     fp = np.sum(np.logical_and(predict_issame, np.logical_not(actual_issame)))
     tn = np.sum(np.logical_and(np.logical_not(predict_issame), np.logical_not(actual_issame)))
@@ -121,7 +138,6 @@ def calculate_accuracy(threshold, dist, actual_issame):
     f1 = tp / (tp + 0.5*(fp + fn))
     acc = float(tp + tn) / dist.size
     return tpr, fpr, acc, f1
-
 
 def calculate_val(thresholds, embeddings1, embeddings2, actual_issame, far_target, nrof_folds=10, distance_metric=0,
                   subtract_mean=False):
@@ -162,7 +178,7 @@ def calculate_val(thresholds, embeddings1, embeddings2, actual_issame, far_targe
 
 
 def calculate_val_far(threshold, dist, actual_issame):
-    predict_issame = np.greater(dist, threshold)
+    predict_issame = np.less(dist, threshold)
     true_accept = np.sum(np.logical_and(predict_issame, actual_issame))
     false_accept = np.sum(np.logical_and(predict_issame, np.logical_not(actual_issame)))
     n_same = np.sum(actual_issame)
