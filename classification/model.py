@@ -32,7 +32,7 @@ class Model(nn.Module):
             self.last_layer_size = 768
             self.classification_head = SiamHead(input_size=self.base_embedding_size)
         elif self.semi_siam:
-            self.last_layer_size = 2
+            self.last_layer_size = 1
             self.classification_head = SemiSiamHead(input_size=self.base_embedding_size, output_size=self.last_layer_size)
         elif self.CLS:
             self.last_layer_size = 2

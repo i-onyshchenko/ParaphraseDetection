@@ -74,12 +74,13 @@ class SiamHead(nn.Module):
 
 
 class SemiSiamHead(nn.Module):
-    def __init__(self, input_size=768, output_size=768):
+    def __init__(self, input_size=768, output_size=2):
         super(SemiSiamHead, self).__init__()
         self.input_size = input_size
         self.output_size = output_size
-        self.fc1 = nn.Linear(self.input_size*4, 512)
-        self.fc2 = nn.Linear(512, self.output_size)
+        self.fc = nn.Linear(self.input_size*4, self.output_size)
+        # self.fc1 = nn.Linear(self.input_size*4, 512)
+        # self.fc2 = nn.Linear(512, self.output_size)
         # self.fc3 = nn.Linear(256, 128)
         self.dropout = nn.Dropout(p=0.5)
         # self.batch_norm = nn.BatchNorm1d(256 * 4)
@@ -103,10 +104,11 @@ class SemiSiamHead(nn.Module):
         x2 = sentences2
 
         x = torch.cat([x1, x2, torch.abs(x1-x2), x1*x2], dim=-1)
-        x = self.fc1(x)
-        x = torch.relu(x)
+        x = self.fc(x)
+        # x = self.fc1(x)
+        # x = torch.relu(x)
         # x = self.dropout(x)
-        x = self.fc2(x)
+        # x = self.fc2(x)
         if self.output_size == 1:
             x = torch.sigmoid(x)
 
@@ -164,6 +166,7 @@ class CLSHead(nn.Module):
         # x = self.batch_norm2(x) # make it worse
         x = self.output_layer(x)
 
-        x = torch.sigmoid(x)
+        if self.output_size == 1:
+            x = torch.sigmoid(x)
 
         return x.squeeze(), None, None

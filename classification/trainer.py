@@ -40,7 +40,7 @@ class MyTrainer:
         self.epoch_size = epoch_size
         self.pretrain_head = True
         self.init_epochs = 10
-        self.evaluate_softmax = True
+        self.evaluate_softmax = True if self.model.output_size == 2 else False
         self.device = torch.device("cuda")
 
         self.model.to(self.device)
@@ -142,13 +142,14 @@ class MyTrainer:
                     # labels[i] in {1, 0}
                     if self.evaluate_softmax:
                         labels = torch.as_tensor(batch['label'], dtype=torch.long, device=self.device)
-                        loss = F.cross_entropy(logits, labels)
+                        loss = F.cross_entropy(logits, labels, weight=torch.as_tensor([0.33, 0.67], device=self.device))
                     else:
                         labels = torch.as_tensor(batch['label'], dtype=torch.float, device=self.device)
-                        loss = F.binary_cross_entropy(logits, labels)
+                        weights = [0.33 if label == 0 else 0.67 for label in batch['label']]
+                        loss = F.binary_cross_entropy(logits, labels, weight=torch.as_tensor(weights, device=self.device))
                 else:
                     raise Exception("Not specified head!")
-                # loss = self.criterion(logits, labels).to(self.device)
+
                 loss.backward()
                 self.optimizer.step()
 
@@ -233,7 +234,7 @@ class MyTrainer:
             print('Accuracy: %2.5f+-%2.5f' % (np.mean(accuracy), np.std(accuracy)))
             print('F1: %2.5f+-%2.5f' % (np.mean(f1), np.std(f1)))
             print('Best threshold: %2.5f+-%2.5f' % (np.mean(best_thresholds), np.std(best_thresholds)))
-            
+
         print("-"*80)
 
     def evaluate_embeddings(self):
