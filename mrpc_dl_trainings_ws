@@ -158,6 +158,12 @@ Accuracy: 0.72633+-0.03253
 F1: 0.81022+-0.02714
 Best threshold: 0.55669+-0.00003
 
+# semi-siam
+# bert-base with head_pretraining(10 epochs, lr=0.0005), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9, v, w, |v - w|, v*w, logistic regression, weights=[1, 2]
+Accuracy: 0.74024+-0.03130
+F1: 0.81838+-0.02608
+Best threshold: 0.65800+-0.00000
+
 ############# ALBERT ##############
 # albert-base-v1
 Epoch: 17

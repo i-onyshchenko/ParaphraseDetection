@@ -142,10 +142,10 @@ class MyTrainer:
                     # labels[i] in {1, 0}
                     if self.evaluate_softmax:
                         labels = torch.as_tensor(batch['label'], dtype=torch.long, device=self.device)
-                        loss = F.cross_entropy(logits, labels, weight=torch.as_tensor([0.33, 0.67], device=self.device))
+                        loss = F.cross_entropy(logits, labels, weight=torch.as_tensor([1, 2], device=self.device))
                     else:
                         labels = torch.as_tensor(batch['label'], dtype=torch.float, device=self.device)
-                        weights = [0.33 if label == 0 else 0.67 for label in batch['label']]
+                        weights = [1 if label == 0 else 2 for label in batch['label']]
                         loss = F.binary_cross_entropy(logits, labels, weight=torch.as_tensor(weights, device=self.device))
                 else:
                     raise Exception("Not specified head!")
