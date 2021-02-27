@@ -1,6 +1,6 @@
 from transformers import AutoTokenizer, AutoModel, AutoModelForPreTraining
 import torch.nn as nn
-from heads import CosineHead, GLUEHead
+from heads import SiamHead, SemiSiamHead, CLSHead
 import numpy as np
 
 
@@ -25,13 +25,20 @@ class Model(nn.Module):
         self.base_embedding_size = 768
         # self.classification_head = GLUEHead()
         # self.classification_head = GLUEHead(input_size=self.base_embedding_size)
-        self.siam = True
+        self.siam = False
+        self.semi_siam = True
+        self.CLS = False
         if self.siam:
             self.last_layer_size = 768
-            self.classification_head = CosineHead(input_size=self.base_embedding_size)
-        else:
+            self.classification_head = SiamHead(input_size=self.base_embedding_size)
+        elif self.semi_siam:
             self.last_layer_size = 1
-            self.classification_head = GLUEHead(input_size=self.base_embedding_size)
+            self.classification_head = SemiSiamHead(input_size=self.base_embedding_size)
+        elif self.CLS:
+            self.last_layer_size = 1
+            self.classification_head = CLSHead(input_size=self.base_embedding_size)
+        else:
+            raise Exception("Not supported head!")
 
         self.device = "cuda"
 
@@ -57,12 +64,34 @@ class Model(nn.Module):
             embeddings1 = self.base_model.to(self.device)(**tokens1)[0]
             embeddings2 = self.base_model.to(self.device)(**tokens2)[0]
 
-            # use this line if head returns its own embeddings
-            # logits, embeddings1, embeddings2 = self.classification_head.to(self.device)([embeddings1, embeddings2])
             attentions = [tokens1["attention_mask"], tokens2["attention_mask"]]
             _, embedds1, embedds2 = self.classification_head.to(self.device)([embeddings1, embeddings2], attentions=attentions)
-            logits = None
-        else:
+            return _, embedds1, embedds2
+        elif self.semi_siam:
+            swap_inputs = False
+
+            tokens1 = self.base_tokenizer(inputs[0], truncation=True, padding=True, max_length=128, return_tensors="pt")
+            tokens1 = {key: value.to(self.device) for key, value in tokens1.items()}
+            tokens2 = self.base_tokenizer(inputs[1], truncation=True, padding=True, max_length=128, return_tensors="pt")
+            tokens2 = {key: value.to(self.device) for key, value in tokens2.items()}
+            embeddings1 = self.base_model.to(self.device)(**tokens1)[0]
+            embeddings2 = self.base_model.to(self.device)(**tokens2)[0]
+
+            attentions = [tokens1["attention_mask"], tokens2["attention_mask"]]
+            logits, _, _ = self.classification_head.to(self.device)([embeddings1, embeddings2],
+                                                                    attentions=attentions)
+
+            if swap_inputs:
+                tokens_pair2 = self.base_tokenizer(inputs[1], inputs[0], truncation=True, padding=True, max_length=512,
+                                                   return_tensors="pt")
+                tokens_pair2 = {key: value.to(self.device) for key, value in tokens_pair2.items()}
+                embeddings2 = self.base_model.to(self.device)(**tokens_pair2)[0]
+                logits2, _, _ = self.classification_head.to(self.device)(embeddings2, attentions=tokens_pair2["attention_mask"])
+
+                return (logits + logits2) / 2, None, None
+
+            return logits, None, None
+        elif self.CLS:
             swap_inputs = True
 
             tokens_pair = self.base_tokenizer(inputs[0], inputs[1], truncation=True, padding=True, max_length=512,
@@ -71,7 +100,6 @@ class Model(nn.Module):
             # print(tokens_pair["attention_mask"])
             embeddings = self.base_model.to(self.device)(**tokens_pair)[0]
             logits, _, _ = self.classification_head.to(self.device)(embeddings, attentions=tokens_pair["attention_mask"])
-            embedds1, embedds2 = None, None
 
             if swap_inputs:
                 tokens_pair2 = self.base_tokenizer(inputs[1], inputs[0], truncation=True, padding=True, max_length=512,
@@ -80,13 +108,15 @@ class Model(nn.Module):
                 embeddings2 = self.base_model.to(self.device)(**tokens_pair2)[0]
                 logits2, _, _ = self.classification_head.to(self.device)(embeddings2, attentions=tokens_pair2["attention_mask"])
 
-                return (logits + logits2) / 2, embedds1, embedds2
+                return (logits + logits2) / 2, None, None
 
             # print(tokens_pair["attention_mask"][0])
             # print(embeddings[0].size())
             # print(embeddings[0][tokens_pair["attention_mask"][0] == 1].size())
 
-        return logits, embedds1, embedds2
+            return logits, None, None
+        else:
+            raise Exception("Not specified head!")
 
     @property
     def embed_size(self):

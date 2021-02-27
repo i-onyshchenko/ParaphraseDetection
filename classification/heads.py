@@ -5,9 +5,9 @@ from util.utils import masked_aggregation
 
 
 # use if you wanna evaluating embeddings using some distance, e.g., cosine distance (similarity)
-class CosineHead(nn.Module):
+class SiamHead(nn.Module):
     def __init__(self, input_size=768, output_size=768):
-        super(CosineHead, self).__init__()
+        super(SiamHead, self).__init__()
         self.fc1 = nn.Linear(input_size, 512)
         self.fc2 = nn.Linear(512, 256)
         # self.fc3 = nn.Linear(256, 128)
@@ -71,9 +71,45 @@ class CosineHead(nn.Module):
         return None, x1, x2
 
 
-class GLUEHead(nn.Module):
+class SemiSiamHead(nn.Module):
+    def __init__(self, input_size=768, output_size=768):
+        super(SemiSiamHead, self).__init__()
+        self.fc1 = nn.Linear(input_size*4, 1)
+        self.fc2 = nn.Linear(256, 1)
+        # self.fc3 = nn.Linear(256, 128)
+        self.dropout = nn.Dropout(p=0.5)
+        # self.batch_norm = nn.BatchNorm1d(256 * 4)
+        self.aggregation_type = "CLS"
+
+    def forward(self, inputs, attentions=None):
+        """
+
+        :param inputs: list (shape (2,)) of tensors (batch_size, seq_len, embedding_size)
+        :param attentions: list (shape (2,)) of tensors (batch_size, seq_len)
+        :return: tensor of shape (batch_size,)
+        """
+
+        sentences1 = masked_aggregation(inputs[0], attentions[0], self.aggregation_type)
+        sentences2 = masked_aggregation(inputs[1], attentions[1], self.aggregation_type)
+
+        # Branch for Sentence 1
+        x1 = sentences1
+
+        # Branch for Sentence 2
+        x2 = sentences2
+
+        x = torch.cat([x1, x2, torch.abs(x1-x2), x1*x2], dim=-1)
+        x = self.fc1(x)
+        # x = torch.relu(x)
+        # x = self.fc2(x)
+        x = torch.sigmoid(x)
+
+        return x.squeeze(), None, None
+
+
+class CLSHead(nn.Module):
     def __init__(self, input_size=768*4, output_size=2):
-        super(GLUEHead, self).__init__()
+        super(CLSHead, self).__init__()
         # self.fc1 = nn.Linear(input_size // 4, 256)
         # self.fc2 = nn.Linear(input_size // 4, 256)
         # self.fc3 = nn.Linear(input_size // 4, 256)

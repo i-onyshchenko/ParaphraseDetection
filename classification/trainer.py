@@ -28,15 +28,17 @@ random.seed(666)
 class MyTrainer:
     def __init__(self, model, dataset_name="mrpc", batch_size=12, epochs=30, epoch_size=80):
         self.model = model
-        self.siam = True
-        self.use_triplet = True
-        if self.use_triplet:
+        self.siam = False
+        self.use_triplet = False
+        if self.siam and self.use_triplet:
             self.triplet_loss = nn.TripletMarginWithDistanceLoss(distance_function=lambda x, y: 1.0 - F.cosine_similarity(x, y), margin=0.5)
+        self.semi_siam = True
+        self.CLS = False
         self.dataset_name = dataset_name
         self.batch_size = batch_size
         self.epochs = epochs
         self.epoch_size = epoch_size
-        self.pretrain_head = False
+        self.pretrain_head = True
         self.init_epochs = 10
         self.device = torch.device("cuda")
 
@@ -85,7 +87,7 @@ class MyTrainer:
         # self.optimizer = AdamW(optimizer_grouped_parameters, lr=0.001)
         print("Nrof parameters: {}".format(len(list(self.model.parameters()))))
 
-        self.optimizer = optim.SGD(self.model.parameters(), lr=0.01, momentum=0.9, weight_decay=0.01, nesterov=True)
+        self.optimizer = optim.SGD(self.model.parameters(), lr=0.0005, momentum=0.9, weight_decay=0.01, nesterov=True)
         self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=5, gamma=0.5)
 
     # def compute_loss(self, inputs):
@@ -113,8 +115,10 @@ class MyTrainer:
 
                 if self.siam:
                     _, embeddings1, embeddings2 = self.model.forward(inputs)
-                else:
+                elif self.semi_siam or self.CLS:
                     logits, _, _ = self.model.forward(inputs)
+                else:
+                    raise Exception("Not specified head!")
 
                 # zero the parameter gradients
                 self.optimizer.zero_grad()
@@ -133,10 +137,12 @@ class MyTrainer:
                         labels = torch.as_tensor(batch['label'] * 2 - 1, dtype=torch.float, device=self.device)
                         # loss = nn.CosineEmbeddingLoss(embeddings1, embeddings2, labels).to(self.device)
                         loss = F.cosine_embedding_loss(embeddings1, embeddings2, labels, margin=0.5)
-                else:
+                elif self.semi_siam or self.CLS:
                     # labels[i] in {1, 0}
                     labels = torch.as_tensor(batch['label'], dtype=torch.float, device=self.device)
                     loss = F.binary_cross_entropy(logits, labels)
+                else:
+                    raise Exception("Not specified head!")
                 # loss = self.criterion(logits, labels).to(self.device)
                 loss.backward()
                 self.optimizer.step()
@@ -149,7 +155,7 @@ class MyTrainer:
                     break
 
             self.scheduler.step()
-            self.evaluate(CLS=not self.siam, evaluate_softmax=False)
+            self.evaluate()
 
         date_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         model_path = "/home/ihor/University/DiplomaProject/Program/models/" + date_time + ".pt"
@@ -159,20 +165,21 @@ class MyTrainer:
         if epoch < init_epochs:
             for param in self.model.base_model.parameters():
                 param.requires_grad = False
-            # self.model.base_model.eval()
         elif epoch == init_epochs:
             for param in self.model.base_model.parameters():
                 param.requires_grad = True
-            self.optimizer = optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9, weight_decay=0.01,
+            self.optimizer = optim.SGD(self.model.parameters(), lr=0.00005, momentum=0.9, weight_decay=0.01,
                                        nesterov=True)
             self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=5, gamma=0.5)
         self.model.base_model.eval()
 
-    def evaluate(self, CLS=True, **kwargs):
-        if CLS:
+    def evaluate(self, **kwargs):
+        if self.siam:
+            self.evaluate_embeddings()
+        elif self.semi_siam or self.CLS:
             self.evaluate_cls(evaluate_softmax=kwargs.get("evaluate_softmax", False))
         else:
-            self.evaluate_embeddings()
+            raise Exception("Not specified head!")
 
     def evaluate_cls(self, evaluate_softmax=False):
         """
@@ -206,6 +213,9 @@ class MyTrainer:
                 logits[i * self.batch_size:(i + 1) * self.batch_size] = batch_logits.cpu()
 
         labels = np.array(self.test_dataset["label"])
+        print(np.mean(logits))
+        print(np.min(logits))
+        print(np.max(logits))
 
         if evaluate_softmax:
             predictions = np.argmax(logits, axis=1)

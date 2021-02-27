@@ -5,7 +5,7 @@ from scipy import interpolate
 
 def evaluate_classification(logits, labels, nrof_folds=10):
     nrof_pairs = min(len(labels), logits.shape[0])
-    thresholds = np.arange(0, 4, 0.01)
+    thresholds = np.arange(0, 1, 0.0001)
     nrof_thresholds = len(thresholds)
     k_fold = KFold(n_splits=nrof_folds, shuffle=False)
 
@@ -138,6 +138,7 @@ def calculate_accuracy(threshold, dist, actual_issame):
     f1 = tp / (tp + 0.5*(fp + fn))
     acc = float(tp + tn) / dist.size
     return tpr, fpr, acc, f1
+
 
 def calculate_val(thresholds, embeddings1, embeddings2, actual_issame, far_target, nrof_folds=10, distance_metric=0,
                   subtract_mean=False):

@@ -75,7 +75,7 @@ Accuracy: 0.84340+-0.03496
 F1: 0.88564+-0.02730
 
 
-# CLS classification with sigmoid on bert-base-cased_mrpc, hidden = 768, base_model os trainable, batch_size=12, epochs=100, epoch_size=80
+# CLS classification with sigmoid on bert-base-cased_mrpc, hidden = 768, base_model is trainable, batch_size=12, epochs=100, epoch_size=80
 mean of logits [s1, s2] and [s2, s1]
 x = inputs[:, 0]
         # x = torch.relu(x)
