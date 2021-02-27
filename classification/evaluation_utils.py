@@ -3,7 +3,20 @@ from sklearn.model_selection import KFold
 from scipy import interpolate
 
 
-def evaluate_classification(logits, labels, nrof_folds=10):
+def evaluate_classification(predictions, labels):
+    tp = np.sum(np.logical_and(predictions, labels))
+    fp = np.sum(np.logical_and(predictions, np.logical_not(labels)))
+    tn = np.sum(np.logical_and(np.logical_not(predictions), np.logical_not(labels)))
+    fn = np.sum(np.logical_and(np.logical_not(predictions), labels))
+
+    tpr = 0 if (tp + fn == 0) else float(tp) / float(tp + fn)
+    fpr = 0 if (fp + tn == 0) else float(fp) / float(fp + tn)
+    f1 = tp / (tp + 0.5 * (fp + fn))
+    acc = float(tp + tn) / predictions.size
+    return tpr, fpr, acc, f1
+
+
+def evaluate_logistic_classification(logits, labels, nrof_folds=10):
     nrof_pairs = min(len(labels), logits.shape[0])
     thresholds = np.arange(0, 1, 0.0001)
     nrof_thresholds = len(thresholds)
@@ -22,16 +35,16 @@ def evaluate_classification(logits, labels, nrof_folds=10):
         acc_train = np.zeros((nrof_thresholds))
         f1_train = np.zeros((nrof_thresholds))
         for threshold_idx, threshold in enumerate(thresholds):
-            _, _, acc_train[threshold_idx], f1_train[threshold_idx] = calculate_accuracy_for_classification(threshold, logits[train_set],
-                                                                                         labels[train_set])
+            _, _, acc_train[threshold_idx], f1_train[threshold_idx] = calculate_accuracy_for_logistic_classification(threshold, logits[train_set],
+                                                                                                                     labels[train_set])
         best_threshold_index = np.argmax(acc_train)
         best_thresholds[fold_idx] = thresholds[best_threshold_index]
         for threshold_idx, threshold in enumerate(thresholds):
-            tprs[fold_idx, threshold_idx], fprs[fold_idx, threshold_idx], _, _ = calculate_accuracy_for_classification(threshold,
-                                                                                                    logits[test_set],
-                                                                                                    labels[test_set])
-        _, _, accuracy[fold_idx], f1[fold_idx] = calculate_accuracy_for_classification(thresholds[best_threshold_index], logits[test_set],
-                                                                    labels[test_set])
+            tprs[fold_idx, threshold_idx], fprs[fold_idx, threshold_idx], _, _ = calculate_accuracy_for_logistic_classification(threshold,
+                                                                                                                                logits[test_set],
+                                                                                                                                labels[test_set])
+        _, _, accuracy[fold_idx], f1[fold_idx] = calculate_accuracy_for_logistic_classification(thresholds[best_threshold_index], logits[test_set],
+                                                                                                labels[test_set])
 
     tpr = np.mean(tprs, 0)
     fpr = np.mean(fprs, 0)
@@ -112,7 +125,7 @@ def calculate_roc(thresholds, embeddings1, embeddings2, actual_issame, nrof_fold
     return tpr, fpr, accuracy, f1, best_thresholds
 
 
-def calculate_accuracy_for_classification(threshold, similarity, actual_issame):
+def calculate_accuracy_for_logistic_classification(threshold, similarity, actual_issame):
     predict_issame = np.greater(similarity, threshold)
     tp = np.sum(np.logical_and(predict_issame, actual_issame))
     fp = np.sum(np.logical_and(predict_issame, np.logical_not(actual_issame)))

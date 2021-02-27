@@ -8,7 +8,9 @@ from util.utils import masked_aggregation
 class SiamHead(nn.Module):
     def __init__(self, input_size=768, output_size=768):
         super(SiamHead, self).__init__()
-        self.fc1 = nn.Linear(input_size, 512)
+        self.input_size = input_size
+        self.output_size = output_size
+        self.fc1 = nn.Linear(self.input_size, 512)
         self.fc2 = nn.Linear(512, 256)
         # self.fc3 = nn.Linear(256, 128)
         self.dropout = nn.Dropout(p=0.5)
@@ -74,8 +76,10 @@ class SiamHead(nn.Module):
 class SemiSiamHead(nn.Module):
     def __init__(self, input_size=768, output_size=768):
         super(SemiSiamHead, self).__init__()
-        self.fc1 = nn.Linear(input_size*4, 1)
-        self.fc2 = nn.Linear(256, 1)
+        self.input_size = input_size
+        self.output_size = output_size
+        self.fc1 = nn.Linear(self.input_size*4, 512)
+        self.fc2 = nn.Linear(512, self.output_size)
         # self.fc3 = nn.Linear(256, 128)
         self.dropout = nn.Dropout(p=0.5)
         # self.batch_norm = nn.BatchNorm1d(256 * 4)
@@ -100,22 +104,26 @@ class SemiSiamHead(nn.Module):
 
         x = torch.cat([x1, x2, torch.abs(x1-x2), x1*x2], dim=-1)
         x = self.fc1(x)
-        # x = torch.relu(x)
-        # x = self.fc2(x)
-        x = torch.sigmoid(x)
+        x = torch.relu(x)
+        # x = self.dropout(x)
+        x = self.fc2(x)
+        if self.output_size == 1:
+            x = torch.sigmoid(x)
 
         return x.squeeze(), None, None
 
 
 class CLSHead(nn.Module):
-    def __init__(self, input_size=768*4, output_size=2):
+    def __init__(self, input_size=768, output_size=2):
         super(CLSHead, self).__init__()
+        self.input_size = input_size
+        self.output_size = output_size
         # self.fc1 = nn.Linear(input_size // 4, 256)
         # self.fc2 = nn.Linear(input_size // 4, 256)
         # self.fc3 = nn.Linear(input_size // 4, 256)
         # self.fc4 = nn.Linear(256*4, output_size)
-        self.hidden_fc = nn.Linear(input_size, 1024)
-        self.output_layer = nn.Linear(1024, 1)
+        self.hidden_fc = nn.Linear(self.input_size, 1024)
+        self.output_layer = nn.Linear(1024, self.output_size)
         self.dropout = nn.Dropout(p=0.5)
         # self.batch_norm1 = nn.BatchNorm1d(input_size)
         # self.batch_norm2 = nn.BatchNorm1d(1024)

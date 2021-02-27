@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 from model import Model
 from nlp import load_dataset
-from evaluation_utils import evaluate_classification, evaluate_embeddings
+from evaluation_utils import evaluate_classification, evaluate_logistic_classification, evaluate_embeddings
 from util.utils import get_triplets
 
 torch.manual_seed(666)
@@ -40,6 +40,7 @@ class MyTrainer:
         self.epoch_size = epoch_size
         self.pretrain_head = True
         self.init_epochs = 10
+        self.evaluate_softmax = True
         self.device = torch.device("cuda")
 
         self.model.to(self.device)
@@ -139,8 +140,12 @@ class MyTrainer:
                         loss = F.cosine_embedding_loss(embeddings1, embeddings2, labels, margin=0.5)
                 elif self.semi_siam or self.CLS:
                     # labels[i] in {1, 0}
-                    labels = torch.as_tensor(batch['label'], dtype=torch.float, device=self.device)
-                    loss = F.binary_cross_entropy(logits, labels)
+                    if self.evaluate_softmax:
+                        labels = torch.as_tensor(batch['label'], dtype=torch.long, device=self.device)
+                        loss = F.cross_entropy(logits, labels)
+                    else:
+                        labels = torch.as_tensor(batch['label'], dtype=torch.float, device=self.device)
+                        loss = F.binary_cross_entropy(logits, labels)
                 else:
                     raise Exception("Not specified head!")
                 # loss = self.criterion(logits, labels).to(self.device)
@@ -173,11 +178,11 @@ class MyTrainer:
             self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=5, gamma=0.5)
         self.model.base_model.eval()
 
-    def evaluate(self, **kwargs):
+    def evaluate(self):
         if self.siam:
             self.evaluate_embeddings()
         elif self.semi_siam or self.CLS:
-            self.evaluate_cls(evaluate_softmax=kwargs.get("evaluate_softmax", False))
+            self.evaluate_cls()
         else:
             raise Exception("Not specified head!")
 
@@ -192,7 +197,7 @@ class MyTrainer:
         sentences1 = self.test_dataset["sentence1"]
         sentences2 = self.test_dataset["sentence2"]
 
-        if evaluate_softmax:
+        if self.evaluate_softmax:
             logits = np.zeros((self.nrof_test_samples, 2))
         else:
             logits = np.zeros(self.nrof_test_samples)
@@ -213,19 +218,23 @@ class MyTrainer:
                 logits[i * self.batch_size:(i + 1) * self.batch_size] = batch_logits.cpu()
 
         labels = np.array(self.test_dataset["label"])
-        print(np.mean(logits))
-        print(np.min(logits))
-        print(np.max(logits))
+        # print(np.mean(logits))
+        # print(np.min(logits))
+        # print(np.max(logits))
 
-        if evaluate_softmax:
+        if self.evaluate_softmax:
             predictions = np.argmax(logits, axis=1)
+            tpr, fpr, acc, f1 = evaluate_classification(predictions, labels)
+            print('Accuracy: %2.5f' % acc)
+            print('F1: %2.5f' % f1)
         else:
-            predictions = logits
-        tpr, fpr, accuracy, f1, best_thresholds = evaluate_classification(predictions, labels, nrof_folds=10)
+            tpr, fpr, accuracy, f1, best_thresholds = evaluate_logistic_classification(logits, labels, nrof_folds=10)
 
-        print('Accuracy: %2.5f+-%2.5f' % (np.mean(accuracy), np.std(accuracy)))
-        print('F1: %2.5f+-%2.5f' % (np.mean(f1), np.std(f1)))
-        print('Best threshold: %2.5f+-%2.5f' % (np.mean(best_thresholds), np.std(best_thresholds)))
+            print('Accuracy: %2.5f+-%2.5f' % (np.mean(accuracy), np.std(accuracy)))
+            print('F1: %2.5f+-%2.5f' % (np.mean(f1), np.std(f1)))
+            print('Best threshold: %2.5f+-%2.5f' % (np.mean(best_thresholds), np.std(best_thresholds)))
+            
+        print("-"*80)
 
     def evaluate_embeddings(self):
         """
