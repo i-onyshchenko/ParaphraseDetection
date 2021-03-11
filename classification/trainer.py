@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 from model import Model
 from nlp import load_dataset
-from evaluation_utils import evaluate_classification, evaluate_logistic_classification, evaluate_embeddings
+from evaluation_utils import evaluate_softmax_classification, evaluate_logistic_classification, evaluate_embeddings
 from util.utils import get_triplets
 
 torch.manual_seed(666)
@@ -28,17 +28,17 @@ random.seed(666)
 class MyTrainer:
     def __init__(self, model, dataset_name="mrpc", batch_size=12, epochs=30, epoch_size=80):
         self.model = model
-        self.siam = False
+        self.siam = True
         self.use_triplet = False
         if self.siam and self.use_triplet:
             self.triplet_loss = nn.TripletMarginWithDistanceLoss(distance_function=lambda x, y: 1.0 - F.cosine_similarity(x, y), margin=0.5)
-        self.semi_siam = True
+        self.semi_siam = False
         self.CLS = False
         self.dataset_name = dataset_name
         self.batch_size = batch_size
         self.epochs = epochs
         self.epoch_size = epoch_size
-        self.pretrain_head = True
+        self.pretrain_head = False
         self.init_epochs = 10
         self.evaluate_softmax = True if self.model.output_size == 2 else False
         self.device = torch.device("cuda")
@@ -88,7 +88,7 @@ class MyTrainer:
         # self.optimizer = AdamW(optimizer_grouped_parameters, lr=0.001)
         print("Nrof parameters: {}".format(len(list(self.model.parameters()))))
 
-        self.optimizer = optim.SGD(self.model.parameters(), lr=0.0005, momentum=0.9, weight_decay=0.01, nesterov=True)
+        self.optimizer = optim.SGD(self.model.parameters(), lr=0.00005, momentum=0.9, weight_decay=0.01, nesterov=True)
         self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=5, gamma=0.5)
 
     # def compute_loss(self, inputs):
@@ -142,10 +142,10 @@ class MyTrainer:
                     # labels[i] in {1, 0}
                     if self.evaluate_softmax:
                         labels = torch.as_tensor(batch['label'], dtype=torch.long, device=self.device)
-                        loss = F.cross_entropy(logits, labels, weight=torch.as_tensor([1, 2], device=self.device))
+                        loss = F.cross_entropy(logits, labels, weight=torch.as_tensor([1, 1], device=self.device))
                     else:
                         labels = torch.as_tensor(batch['label'], dtype=torch.float, device=self.device)
-                        weights = [1 if label == 0 else 2 for label in batch['label']]
+                        weights = [1 if label == 0 else 1 for label in batch['label']]
                         loss = F.binary_cross_entropy(logits, labels, weight=torch.as_tensor(weights, device=self.device))
                 else:
                     raise Exception("Not specified head!")
@@ -187,6 +187,8 @@ class MyTrainer:
         else:
             raise Exception("Not specified head!")
 
+        print('-' * 80)
+
     def evaluate_cls(self, evaluate_softmax=False):
         """
         It is used for evaluation with binary output
@@ -225,7 +227,7 @@ class MyTrainer:
 
         if self.evaluate_softmax:
             predictions = np.argmax(logits, axis=1)
-            tpr, fpr, acc, f1 = evaluate_classification(predictions, labels)
+            tpr, fpr, acc, f1 = evaluate_softmax_classification(predictions, labels)
             print('Accuracy: %2.5f' % acc)
             print('F1: %2.5f' % f1)
         else:
@@ -235,7 +237,6 @@ class MyTrainer:
             print('F1: %2.5f+-%2.5f' % (np.mean(f1), np.std(f1)))
             print('Best threshold: %2.5f+-%2.5f' % (np.mean(best_thresholds), np.std(best_thresholds)))
 
-        print("-"*80)
 
     def evaluate_embeddings(self):
         """

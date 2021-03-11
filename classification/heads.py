@@ -6,16 +6,16 @@ from util.utils import masked_aggregation
 
 # use if you wanna evaluating embeddings using some distance, e.g., cosine distance (similarity)
 class SiamHead(nn.Module):
-    def __init__(self, input_size=768, output_size=768):
+    def __init__(self, input_size=768, output_size=768, aggregation_type="mean"):
         super(SiamHead, self).__init__()
         self.input_size = input_size
         self.output_size = output_size
-        self.fc1 = nn.Linear(self.input_size, 512)
-        self.fc2 = nn.Linear(512, 256)
+        self.fc1 = nn.Linear(self.input_size, self.output_size)
+        self.fc2 = nn.Linear(self.input_size, self.output_size)
         # self.fc3 = nn.Linear(256, 128)
         self.dropout = nn.Dropout(p=0.5)
         # self.batch_norm = nn.BatchNorm1d(256 * 4)
-        self.aggregation_type = "CLS"
+        self.aggregation_type = aggregation_type
 
     def forward(self, inputs, attentions=None):
         """
@@ -32,12 +32,14 @@ class SiamHead(nn.Module):
 
         # Branch for Sentence 1
         x1 = sentences1
+        # x1 = torch.tanh(sentences1)
+        # x1 = self.fc1(x1)
         # x1 = self.fc1(sentences1)
-        # x1 = torch.tanh(x1)
+        # x1 = torch.relu(x1)
         # x1 = self.dropout(x1)
         #
         # x1 = self.fc2(x1)
-        # x1 = torch.tanh(x1)
+        # x1 = torch.relu(x1)
         # x1 = self.dropout(x1)
         #
         # x1 = self.fc3(x1)
@@ -48,12 +50,14 @@ class SiamHead(nn.Module):
 
         # Branch for Sentence 2
         x2 = sentences2
+        # x2 = torch.tanh(sentences2)
+        # x2 = self.fc1(x2)
         # x2 = self.fc1(sentences2)
-        # x2 = torch.tanh(x2)
+        # x2 = torch.relu(x2)
         # x2 = self.dropout(x2)
         #
         # x2 = self.fc2(x2)
-        # x2 = torch.tanh(x2)
+        # x2 = torch.relu(x2)
         # x2 = self.dropout(x2)
         #
         # x2 = self.fc3(x2)
@@ -74,7 +78,7 @@ class SiamHead(nn.Module):
 
 
 class SemiSiamHead(nn.Module):
-    def __init__(self, input_size=768, output_size=2):
+    def __init__(self, input_size=768, output_size=2, aggregation_type="mean"):
         super(SemiSiamHead, self).__init__()
         self.input_size = input_size
         self.output_size = output_size
@@ -84,7 +88,7 @@ class SemiSiamHead(nn.Module):
         # self.fc3 = nn.Linear(256, 128)
         self.dropout = nn.Dropout(p=0.5)
         # self.batch_norm = nn.BatchNorm1d(256 * 4)
-        self.aggregation_type = "CLS"
+        self.aggregation_type = aggregation_type
 
     def forward(self, inputs, attentions=None):
         """
@@ -116,7 +120,7 @@ class SemiSiamHead(nn.Module):
 
 
 class CLSHead(nn.Module):
-    def __init__(self, input_size=768, output_size=2):
+    def __init__(self, input_size=768, output_size=2, aggregation_type="mean"):
         super(CLSHead, self).__init__()
         self.input_size = input_size
         self.output_size = output_size
@@ -129,7 +133,7 @@ class CLSHead(nn.Module):
         self.dropout = nn.Dropout(p=0.5)
         # self.batch_norm1 = nn.BatchNorm1d(input_size)
         # self.batch_norm2 = nn.BatchNorm1d(1024)
-        self.aggregation_type = "CLS"
+        self.aggregation_type = aggregation_type
 
     def forward(self, inputs, attentions=None):
         # original_x1 = torch.mean(inputs[0], dim=1)

@@ -164,6 +164,86 @@ Accuracy: 0.74024+-0.03130
 F1: 0.81838+-0.02608
 Best threshold: 0.65800+-0.00000
 
+# siam triplet, CLS aggreg, hidden 768, tanh, bert-base-mrpc-pretrained with head_pretraining(10 epochs, lr=0.0005), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 22
+Accuracy: 0.75186+-0.03756
+F1: 0.82794+-0.02836
+Best threshold: 0.39157+-0.00009
+
+# siam triplet, mean aggreg, hidden 768, tanh, bert-base-mrpc-pretrained with head_pretraining(10 epochs, lr=0.0005), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 14
+Accuracy: 0.74089+-0.02283
+F1: 0.81350+-0.02039
+Best threshold: 0.30297+-0.00009
+
+# siam triplet, CLS aggreg, tanh, hidden 768, bert-base-mrpc-pretrained with head_pretraining(10 epochs, lr=0.0005), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 12
+Accuracy: 0.75013+-0.04282
+F1: 0.82393+-0.03117
+Best threshold: 0.39966+-0.00012
+
+# siam triplet, CLS aggreg, tanh, hidden 768, tanh, bert-base-mrpc-pretrained with head_pretraining(10 epochs, lr=0.0005), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 12
+Accuracy: 0.75013+-0.04282
+F1: 0.82393+-0.03117
+Best threshold: 0.39919+-0.00003
+
+# siam triplet, CLS aggreg, | hidden 768, tanh, hidden 768, tanh | bert-base-mrpc-pretrained with head_pretraining(10 epochs, lr=0.0005), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 24
+Accuracy: 0.74896+-0.03800
+F1: 0.82916+-0.02882
+Best threshold: 0.42333+-0.00182
+
+# siam triplet, CLS aggreg, | hidden 768, relu, hidden 768, relu | bert-base-mrpc-pretrained with head_pretraining(10 epochs, lr=0.0005), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 30
+Accuracy: 0.741+-0.03800
+F1: 0.818+-0.02882
+Best threshold: 0.42333+-0.00182
+
+# siam triplet, CLS aggreg, | empty | bert-base-mrpc-pretrained, lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 3
+Accuracy: 0.75070+-0.03011
+F1: 0.83144+-0.02465
+Best threshold: 0.21172+-0.00018
+
+# siam, CLS aggreg, | empty | bert-base-mrpc-pretrained, lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch:
+
+# semi-siam, mean aggreg, v, w, |v - w|, v*w, logistic regression, weights=[1, 2], bert-base-mrpc-pretrained with head_pretraining(10 epochs, lr=0.0005), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 23
+Accuracy: 0.75709+-0.02742
+F1: 0.82491+-0.02230
+Best threshold: 0.70960+-0.00945
+
+# semi-siam, CLS aggreg, v, w, |v - w|, v*w, logistic regression, weights=[1, 2], bert-base-mrpc-pretrained with head_pretraining(10 epochs, lr=0.0005), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 13
+Accuracy: 0.77968+-0.02122
+F1: 0.84538+-0.01827
+Best threshold: 0.62540+-0.00500
+
+Epoch: 15
+Accuracy: 0.77970+-0.01969
+F1: 0.84165+-0.01722
+Best threshold: 0.73130+-0.00287
+
+# semi-siam, CLS aggreg, v, w, |v - w|, v*w, logistic regression, weights=[2, 1], bert-base-mrpc-pretrained with head_pretraining(10 epochs, lr=0.0005), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 18
+Accuracy: 0.77969+-0.02061
+F1: 0.84223+-0.01812
+Best threshold: 0.31130+-0.03657
+
+# semi-siam, CLS aggreg, v, w, |v - w|, v*w, logistic regression, weights=[1, 1], bert-base-mrpc-pretrained with head_pretraining(10 epochs, lr=0.0005), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 13
+Accuracy: 0.77970+-0.02616
+F1: 0.84483+-0.02159
+Best threshold: 0.47040+-0.00120
+
+Epoch: 18
+Accuracy: 0.78029+-0.02628
+F1: 0.83889+-0.02162
+Best threshold: 0.54620+-0.00098
+
+
 ############# ALBERT ##############
 # albert-base-v1
 Epoch: 17

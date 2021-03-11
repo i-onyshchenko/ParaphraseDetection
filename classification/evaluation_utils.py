@@ -3,7 +3,7 @@ from sklearn.model_selection import KFold
 from scipy import interpolate
 
 
-def evaluate_classification(predictions, labels):
+def evaluate_softmax_classification(predictions, labels):
     tp = np.sum(np.logical_and(predictions, labels))
     fp = np.sum(np.logical_and(predictions, np.logical_not(labels)))
     tn = np.sum(np.logical_and(np.logical_not(predictions), np.logical_not(labels)))
@@ -18,7 +18,7 @@ def evaluate_classification(predictions, labels):
 
 def evaluate_logistic_classification(logits, labels, nrof_folds=10):
     nrof_pairs = min(len(labels), logits.shape[0])
-    thresholds = np.arange(0, 1, 0.0001)
+    thresholds = np.arange(0, 1, 0.001)
     nrof_thresholds = len(thresholds)
     k_fold = KFold(n_splits=nrof_folds, shuffle=False)
 
@@ -54,7 +54,7 @@ def evaluate_logistic_classification(logits, labels, nrof_folds=10):
 
 def evaluate_embeddings(sentences1, sentences2, labels, nrof_folds=10, distance_metric=0, subtract_mean=False):
     # Calculate evaluation metrics
-    thresholds = np.arange(0.0, 2.0, 0.0001)
+    thresholds = np.arange(0.0, 2.0, 0.001)
     tpr, fpr, accuracy, f1, best_thresholds = calculate_roc(thresholds, sentences1, sentences2,
                                                np.asarray(labels), nrof_folds=nrof_folds,
                                                distance_metric=distance_metric, subtract_mean=subtract_mean)

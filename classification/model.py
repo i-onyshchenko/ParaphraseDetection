@@ -7,10 +7,10 @@ import numpy as np
 class Model(nn.Module):
     def __init__(self):
         super(Model, self).__init__()
-        # self.base_tokenizer = AutoTokenizer.from_pretrained("bert-base-cased-finetuned-mrpc")
-        # self.base_model = AutoModel.from_pretrained("bert-base-cased-finetuned-mrpc")
-        self.base_tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
-        self.base_model = AutoModel.from_pretrained("bert-base-cased")
+        self.base_tokenizer = AutoTokenizer.from_pretrained("bert-base-cased-finetuned-mrpc")
+        self.base_model = AutoModel.from_pretrained("bert-base-cased-finetuned-mrpc")
+        # self.base_tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
+        # self.base_model = AutoModel.from_pretrained("bert-base-cased")
         # self.base_tokenizer = AutoTokenizer.from_pretrained("albert-base-v2")
         # self.base_model = AutoModel.from_pretrained("albert-base-v2")
         # self.base_tokenizer = AutoTokenizer.from_pretrained("roberta-base")
@@ -25,18 +25,22 @@ class Model(nn.Module):
         self.base_embedding_size = 768
         # self.classification_head = GLUEHead()
         # self.classification_head = GLUEHead(input_size=self.base_embedding_size)
-        self.siam = False
-        self.semi_siam = True
+        self.siam = True
+        self.semi_siam = False
         self.CLS = False
+        self.aggregation_type = "CLS"
         if self.siam:
             self.last_layer_size = 768
-            self.classification_head = SiamHead(input_size=self.base_embedding_size)
+            self.classification_head = SiamHead(input_size=self.base_embedding_size, output_size=self.last_layer_size,
+                                                aggregation_type=self.aggregation_type)
         elif self.semi_siam:
             self.last_layer_size = 1
-            self.classification_head = SemiSiamHead(input_size=self.base_embedding_size, output_size=self.last_layer_size)
+            self.classification_head = SemiSiamHead(input_size=self.base_embedding_size, output_size=self.last_layer_size,
+                                                    aggregation_type=self.aggregation_type)
         elif self.CLS:
             self.last_layer_size = 2
-            self.classification_head = CLSHead(input_size=self.base_embedding_size, output_size=self.last_layer_size)
+            self.classification_head = CLSHead(input_size=self.base_embedding_size, output_size=self.last_layer_size,
+                                               aggregation_type=self.aggregation_type)
         else:
             raise Exception("Not supported head!")
 
