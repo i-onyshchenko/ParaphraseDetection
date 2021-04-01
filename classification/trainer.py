@@ -38,12 +38,16 @@ class MyTrainer:
         self.batch_size = batch_size
         self.epochs = epochs
         self.epoch_size = epoch_size
-        self.pretrain_head = False
+        self.pretrain_head = not self.siam
         self.init_epochs = 10
-        self.evaluate_softmax = True if self.model.output_size == 2 else False
+        # self.evaluate_softmax = True if self.model.output_size == 2 else False
         self.device = torch.device("cuda")
 
+        self.model = torch.load("/home/ihor/University/DiplomaProject/Program/models/albert_base_v2_cls20210401-155540.pt")
+        self.model.attach_head("siam")
         self.model.to(self.device)
+
+        self.evaluate_softmax = True if self.model.output_size == 2 else False
 
         # data = tfds.load('glue/mrpc')
         # self.train_dataset = glue_convert_examples_to_features(data['train'], self.tokenizer, max_length=128, task='mrpc')
@@ -88,7 +92,7 @@ class MyTrainer:
         # self.optimizer = AdamW(optimizer_grouped_parameters, lr=0.001)
         print("Nrof parameters: {}".format(len(list(self.model.parameters()))))
 
-        self.optimizer = optim.SGD(self.model.parameters(), lr=0.00005, momentum=0.9, weight_decay=0.01, nesterov=True)
+        self.optimizer = optim.SGD(self.model.parameters(), lr=0.0005, momentum=0.9, weight_decay=0.01, nesterov=True)
         self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=5, gamma=0.5)
 
     # def compute_loss(self, inputs):
@@ -100,6 +104,8 @@ class MyTrainer:
     def train(self):
         # self.pretrain_head = False
         # self.init_epochs = 10
+        print("Baseline before training...")
+        self.evaluate()
         for epoch in range(self.epochs):  # loop over the dataset multiple times
             self.model.train()
             if self.pretrain_head:
@@ -142,7 +148,7 @@ class MyTrainer:
                     # labels[i] in {1, 0}
                     if self.evaluate_softmax:
                         labels = torch.as_tensor(batch['label'], dtype=torch.long, device=self.device)
-                        loss = F.cross_entropy(logits, labels, weight=torch.as_tensor([1, 1], device=self.device))
+                        loss = F.cross_entropy(logits, labels, weight=torch.as_tensor([1.0, 1.0], device=self.device))
                     else:
                         labels = torch.as_tensor(batch['label'], dtype=torch.float, device=self.device)
                         weights = [1 if label == 0 else 1 for label in batch['label']]
@@ -164,7 +170,7 @@ class MyTrainer:
             self.evaluate()
 
         date_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        model_path = "/home/ihor/University/DiplomaProject/Program/models/" + date_time + ".pt"
+        model_path = "/home/ihor/University/DiplomaProject/Program/models/roberta_base_finetuned_siam" + date_time + ".pt"
         torch.save(self.model, model_path)
 
     def finetune_mode(self, init_epochs, epoch):
@@ -174,7 +180,7 @@ class MyTrainer:
         elif epoch == init_epochs:
             for param in self.model.base_model.parameters():
                 param.requires_grad = True
-            self.optimizer = optim.SGD(self.model.parameters(), lr=0.00005, momentum=0.9, weight_decay=0.01,
+            self.optimizer = optim.SGD(self.model.parameters(), lr=0.0005, momentum=0.9, weight_decay=0.01,
                                        nesterov=True)
             self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=5, gamma=0.5)
         self.model.base_model.eval()
@@ -236,7 +242,6 @@ class MyTrainer:
             print('Accuracy: %2.5f+-%2.5f' % (np.mean(accuracy), np.std(accuracy)))
             print('F1: %2.5f+-%2.5f' % (np.mean(f1), np.std(f1)))
             print('Best threshold: %2.5f+-%2.5f' % (np.mean(best_thresholds), np.std(best_thresholds)))
-
 
     def evaluate_embeddings(self):
         """

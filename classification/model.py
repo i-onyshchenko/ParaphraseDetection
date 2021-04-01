@@ -7,12 +7,12 @@ import numpy as np
 class Model(nn.Module):
     def __init__(self):
         super(Model, self).__init__()
-        self.base_tokenizer = AutoTokenizer.from_pretrained("bert-base-cased-finetuned-mrpc")
-        self.base_model = AutoModel.from_pretrained("bert-base-cased-finetuned-mrpc")
+        # self.base_tokenizer = AutoTokenizer.from_pretrained("bert-base-cased-finetuned-mrpc")
+        # self.base_model = AutoModel.from_pretrained("bert-base-cased-finetuned-mrpc")
         # self.base_tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
         # self.base_model = AutoModel.from_pretrained("bert-base-cased")
-        # self.base_tokenizer = AutoTokenizer.from_pretrained("albert-base-v2")
-        # self.base_model = AutoModel.from_pretrained("albert-base-v2")
+        self.base_tokenizer = AutoTokenizer.from_pretrained("albert-base-v2")
+        self.base_model = AutoModel.from_pretrained("albert-base-v2")
         # self.base_tokenizer = AutoTokenizer.from_pretrained("roberta-base")
         # self.base_model = AutoModel.from_pretrained("roberta-base")
         # self.base_tokenizer = AutoTokenizer.from_pretrained("DeBERTa/deberta-base")
@@ -38,7 +38,7 @@ class Model(nn.Module):
             self.classification_head = SemiSiamHead(input_size=self.base_embedding_size, output_size=self.last_layer_size,
                                                     aggregation_type=self.aggregation_type)
         elif self.CLS:
-            self.last_layer_size = 2
+            self.last_layer_size = 1
             self.classification_head = CLSHead(input_size=self.base_embedding_size, output_size=self.last_layer_size,
                                                aggregation_type=self.aggregation_type)
         else:
@@ -82,7 +82,7 @@ class Model(nn.Module):
             embeddings2 = self.base_model.to(self.device)(**tokens2)[0]
 
             attentions = [tokens1["attention_mask"], tokens2["attention_mask"]]
-            logits, _, _ = self.classification_head.to(self.device)([embeddings1, embeddings2],
+            logits, embedds1, embedds2 = self.classification_head.to(self.device)([embeddings1, embeddings2],
                                                                     attentions=attentions)
 
             if swap_inputs:
@@ -90,11 +90,11 @@ class Model(nn.Module):
                                                    return_tensors="pt")
                 tokens_pair2 = {key: value.to(self.device) for key, value in tokens_pair2.items()}
                 embeddings2 = self.base_model.to(self.device)(**tokens_pair2)[0]
-                logits2, _, _ = self.classification_head.to(self.device)(embeddings2, attentions=tokens_pair2["attention_mask"])
+                logits2, embedds1_2, embedds2_2 = self.classification_head.to(self.device)(embeddings2, attentions=tokens_pair2["attention_mask"])
 
                 return (logits + logits2) / 2, None, None
 
-            return logits, None, None
+            return logits, embedds1, embedds2
         elif self.CLS:
             swap_inputs = True
 
@@ -121,6 +121,26 @@ class Model(nn.Module):
             return logits, None, None
         else:
             raise Exception("Not specified head!")
+
+    def attach_head(self, head_type):
+        if head_type == "siam":
+            self.siam = True
+            self.last_layer_size = 768
+            self.classification_head = SiamHead(input_size=self.base_embedding_size, output_size=self.last_layer_size,
+                                                aggregation_type=self.aggregation_type)
+        elif head_type == "semi_siam":
+            self.semi_siam = True
+            self.last_layer_size = 1
+            self.classification_head = SemiSiamHead(input_size=self.base_embedding_size,
+                                                    output_size=self.last_layer_size,
+                                                    aggregation_type=self.aggregation_type)
+        elif head_type == "CLS":
+            self.CLS = True
+            self.last_layer_size = 1
+            self.classification_head = CLSHead(input_size=self.base_embedding_size, output_size=self.last_layer_size,
+                                               aggregation_type=self.aggregation_type)
+        else:
+            raise Exception("Not supported head!")
 
     @property
     def embed_size(self):

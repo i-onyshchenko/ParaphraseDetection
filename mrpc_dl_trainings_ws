@@ -151,6 +151,18 @@ Epoch: 27
 Accuracy: 0.85969+-0.02440
 F1: 0.89701+-0.02076
 
+# CLS aggregation, logistic, empty head
+# bert-base with head_pretraining(10 epochs, lr=0.01), lr=0.001, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 24
+Accuracy: 0.86375+-0.02246
+F1: 0.89817+-0.01868
+Best threshold: 0.52740+-0.03342
+
+Epoch: 30
+Accuracy: 0.86199+-0.02568
+F1: 0.89483+-0.02298
+Best threshold: 0.67940+-0.01183
+
 ##############################################################################################################
 
 # baseline cos_dist for bert-base
@@ -240,6 +252,50 @@ Epoch: 23
 Accuracy: 0.76694+-0.03105
 F1: 0.84074+-0.02244
 Best threshold: 0.14900+-0.00000
+
+####################
+# baseline cos_dist for my bert-base-pretrained
+Accuracy: 0.70782+-0.01237
+F1: 0.78959+-0.01174
+Best threshold: 0.08820+-0.00792
+
+# siam, m = 0.5
+# my bert-base-pretrained, lr=0.0005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 9
+Accuracy: 0.74602+-0.03152
+F1: 0.83104+-0.02335
+Best threshold: 0.04810+-0.00030
+
+Epoch: 23
+Accuracy: 0.75065+-0.03499
+F1: 0.82807+-0.02552
+Best threshold: 0.03420+-0.00060
+
+# siam triplet, m = 0.5
+# my bert-base-pretrained lr=0.0005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 14
+Accuracy: 0.74258+-0.02829
+F1: 0.82502+-0.02080
+Best threshold: 0.35500+-0.00000
+
+# semi-siam
+# my bert-base-pretrained with head_pretraining(10 epochs, lr=0.0005), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9, v, w, |v - w|, v*w, logistic regression
+Epoch: 15
+Accuracy: 0.79416+-0.02254
+F1: 0.85159+-0.01872
+Best threshold: 0.57100+-0.00134
+
+Epoch: 16
+Accuracy: 0.79589+-0.02752
+F1: 0.85137+-0.02257
+Best threshold: 0.50700+-0.00000
+
+Epoch: 17
+Accuracy: 0.79647+-0.02130
+F1: 0.85085+-0.01849
+Best threshold: 0.59570+-0.00168
+
+####################
 
 ############################################################################################################
 
@@ -398,6 +454,54 @@ Accuracy: 0.72171+-0.02791
 F1: 0.81548+-0.02258
 Best threshold: 0.41218+-0.01905
 
+#####################
+# CLS aggregation, logistic, empty head
+# albert-base-v2 with head_pretraining(10 epochs, lr=0.01), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 21
+Accuracy: 0.85740+-0.01698
+F1: 0.89377+-0.01215
+Best threshold: 0.22330+-0.00269
+
+######################################
+# baseline cos_dist for my albert-base
+Accuracy: 0.66488+-0.03229
+F1: 0.79798+-0.02327
+Best threshold: 0.33150+-0.00833
+
+# siam, m = 0.5
+# albert-base, lr=0.0005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch:
+
+
+# siam triplet, m = 0.5
+# albert-base lr=0.0005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch:
+
+
+# semi-siam
+# albert-base with head_pretraining(10 epochs, lr=0.0005), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9, v, w, |v - w|, v*w, logistic regression
+Epoch:
+
+####################
+# baseline cos_dist for my albert-base-pretrained
+Accuracy: 0.69216+-0.03420
+F1: 0.79886+-0.02791
+Best threshold: 0.07930+-0.00287
+
+# siam, m = 0.5
+# my albert-base-pretrained, lr=0.0005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch:
+
+
+# siam triplet, m = 0.5
+# my albert-base-pretrained lr=0.0005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch:
+
+
+# semi-siam
+# my albert-base-pretrained with head_pretraining(10 epochs, lr=0.0005), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9, v, w, |v - w|, v*w, logistic regression
+Epoch:
+
 ########### ROBERTA ###############
 # roberta-base
 Epoch: 15
@@ -449,8 +553,92 @@ Accuracy: 0.87011+-0.02384
 F1: 0.90296+-0.02087
 
 # semi-siam
-# albert with head_pretraining(10 epochs, lr=0.0005), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9, v, w, |v - w|, v*w, logistic regression
+# roberta with head_pretraining(10 epochs, lr=0.0005), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9, v, w, |v - w|, v*w, logistic regression
 Epoch: 16
 Accuracy: 0.67530+-0.03343
 F1: 0.80270+-0.02409
 Best threshold: 0.57670+-0.00020
+
+#########################################
+# CLS aggregation, logistic, empty head
+# roberta with head_pretraining(10 epochs, lr=0.01), lr=0.001, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 30
+Accuracy: 0.79591+-0.01589
+F1: 0.85534+-0.01295
+Best threshold: 0.37400+-0.01868
+
+
+# CLS aggregation, logistic, empty head
+# roberta with head_pretraining(10 epochs, lr=0.01), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 30
+Accuracy: 0.85100+-0.01567
+F1: 0.88711+-0.01530
+Best threshold: 0.75080+-0.00060
+
+
+# CLS aggregation, logistic, empty head
+# roberta with head_pretraining(10 epochs, lr=0.01), lr=0.0001, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 26
+Accuracy: 0.86546+-0.02176
+F1: 0.89726+-0.01931
+Best threshold: 0.81420+-0.00040
+
+Epoch: 30
+Accuracy: 0.86490+-0.02359
+F1: 0.89815+-0.01975
+Best threshold: 0.78820+-0.00160
+
+# CLS aggregation, logistic, empty head, roberta_base_cls_20210401-180654.pt
+# roberta with head_pretraining(10 epochs, lr=0.01), lr=0.0005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 23
+Accuracy: 0.88807+-0.02239
+F1: 0.91543+-0.01934
+Best threshold: 0.50270+-0.00090
+
+Epoch: 30
+Accuracy: 0.88521+-0.01907
+F1: 0.91415+-0.01583
+Best threshold: 0.32560+-0.00680
+
+####################
+# baseline cos_dist for roberta-base
+Accuracy: 0.66372+-0.03108
+F1: 0.79718+-0.02240
+Best threshold: 0.00570+-0.00046
+
+# siam, m = 0.5
+# roberta-base, lr=0.0001, nesterov, weight_decay=0.01, momentum=0.9
+Epoch:
+
+# siam triplet, m = 0.5
+# roberta-base lr=0.0005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch:
+
+# semi-siam
+# roberta-base with head_pretraining(10 epochs, lr=0.0005), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9, v, w, |v - w|, v*w, logistic regression
+Epoch:
+
+####################
+# baseline cos_dist for my roberta-base-pretrained
+Accuracy: 0.72926+-0.03170
+F1: 0.80681+-0.02473
+Best threshold: 0.01570+-0.00046
+
+# siam, m = 0.5
+# my roberta-base-pretrained, lr=0.0001, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 30
+Accuracy: 0.66371+-0.03382
+F1: 0.79649+-0.02469
+Best threshold: 0.06630+-0.00494
+
+
+# siam triplet, m = 0.5
+# my roberta-base-pretrained lr=0.0005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch:
+
+
+# semi-siam
+# my roberta-base-pretrained with head_pretraining(10 epochs, lr=0.0005), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9, v, w, |v - w|, v*w, logistic regression
+Epoch:
+
+

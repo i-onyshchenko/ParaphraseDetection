@@ -1,12 +1,12 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+# import torch.nn.functional as F
 from util.utils import masked_aggregation
 
 
 # use if you wanna evaluating embeddings using some distance, e.g., cosine distance (similarity)
 class SiamHead(nn.Module):
-    def __init__(self, input_size=768, output_size=768, aggregation_type="mean"):
+    def __init__(self, input_size=768, output_size=768, aggregation_type="CLS"):
         super(SiamHead, self).__init__()
         self.input_size = input_size
         self.output_size = output_size
@@ -78,15 +78,16 @@ class SiamHead(nn.Module):
 
 
 class SemiSiamHead(nn.Module):
-    def __init__(self, input_size=768, output_size=2, aggregation_type="mean"):
+    def __init__(self, input_size=768, output_size=1, aggregation_type="CLS"):
         super(SemiSiamHead, self).__init__()
         self.input_size = input_size
         self.output_size = output_size
-        self.fc = nn.Linear(self.input_size*4, self.output_size)
+        # self.fc = nn.Linear(self.input_size*4, self.output_size)
+        self.fc = nn.Linear(self.input_size * 4, self.output_size)
         # self.fc1 = nn.Linear(self.input_size*4, 512)
         # self.fc2 = nn.Linear(512, self.output_size)
         # self.fc3 = nn.Linear(256, 128)
-        self.dropout = nn.Dropout(p=0.5)
+        # self.dropout = nn.Dropout(p=0.5)
         # self.batch_norm = nn.BatchNorm1d(256 * 4)
         self.aggregation_type = aggregation_type
 
@@ -116,11 +117,11 @@ class SemiSiamHead(nn.Module):
         if self.output_size == 1:
             x = torch.sigmoid(x)
 
-        return x.squeeze(), None, None
+        return x.squeeze(), x1, x2
 
 
 class CLSHead(nn.Module):
-    def __init__(self, input_size=768, output_size=2, aggregation_type="mean"):
+    def __init__(self, input_size=768, output_size=1, aggregation_type="CLS"):
         super(CLSHead, self).__init__()
         self.input_size = input_size
         self.output_size = output_size
@@ -128,9 +129,10 @@ class CLSHead(nn.Module):
         # self.fc2 = nn.Linear(input_size // 4, 256)
         # self.fc3 = nn.Linear(input_size // 4, 256)
         # self.fc4 = nn.Linear(256*4, output_size)
-        self.hidden_fc = nn.Linear(self.input_size, 1024)
-        self.output_layer = nn.Linear(1024, self.output_size)
-        self.dropout = nn.Dropout(p=0.5)
+        # self.hidden_fc = nn.Linear(self.input_size, 1024)
+        # self.output_layer = nn.Linear(1024, self.output_size)
+        self.output_layer = nn.Linear(self.input_size, self.output_size)
+        # self.dropout = nn.Dropout(p=0.5)
         # self.batch_norm1 = nn.BatchNorm1d(input_size)
         # self.batch_norm2 = nn.BatchNorm1d(1024)
         self.aggregation_type = aggregation_type
@@ -164,8 +166,11 @@ class CLSHead(nn.Module):
         # x = torch.relu(x)
         # x = self.dropout(x)
         # x = self.batch_norm1(x)
-        x = self.hidden_fc(x)
-        x = torch.relu(x)
+        # start first head
+        # x = self.hidden_fc(x)
+        # x = torch.relu(x)
+        # x = self.output_layer(x)
+        # end first head
         # x = self.dropout(x)
         # x = self.batch_norm2(x) # make it worse
         x = self.output_layer(x)
