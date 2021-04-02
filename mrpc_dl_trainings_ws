@@ -468,19 +468,115 @@ Accuracy: 0.66488+-0.03229
 F1: 0.79798+-0.02327
 Best threshold: 0.33150+-0.00833
 
+# baseline cos_dist for my albert-base (mean)
+Accuracy: 0.68984+-0.02195
+F1: 0.78846+-0.02317
+Best threshold: 0.07850+-0.01351
+
+# baseline cos_dist for my albert-base (max)
+Accuracy: 0.68348+-0.02349
+F1: 0.79172+-0.01876
+Best threshold: 0.05090+-0.00030
+
 # siam, m = 0.5
 # albert-base, lr=0.0005, nesterov, weight_decay=0.01, momentum=0.9
 Epoch:
+Accuracy: 0.68049+-0.04065
+F1: 0.80010+-0.02810
+Best threshold: 0.00200+-0.00000
+
+# siam, m = 0.5
+# albert-base, lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 25
+Accuracy: 0.70196+-0.04191
+F1: 0.81126+-0.02963
+Best threshold: 0.04200+-0.00000
+
+Epoch: 30
+Accuracy: 0.70080+-0.04321
+F1: 0.81037+-0.03053
+Best threshold: 0.04490+-0.00030
 
 
 # siam triplet, m = 0.5
-# albert-base lr=0.0005, nesterov, weight_decay=0.01, momentum=0.9
-Epoch:
+# albert-base lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 7
+Accuracy: 0.69624+-0.01796
+F1: 0.80346+-0.01460
+Best threshold: 0.29610+-0.00939
+
+Epoch: 25
+Accuracy: 0.71478+-0.02563
+F1: 0.79457+-0.02048
+Best threshold: 0.19600+-0.00000
+
+Epoch: 30
+Accuracy: 0.70840+-0.02404
+F1: 0.79006+-0.01950
+Best threshold: 0.19680+-0.00275
+
+# siam triplet, m = 0.5 (mean)
+# albert-base lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 10
+Accuracy: 0.69445+-0.02463
+F1: 0.79324+-0.02052
+Best threshold: 0.16520+-0.00060
+
+Epoch: 30
+Accuracy: 0.68691+-0.02955
+F1: 0.78461+-0.02275
+Best threshold: 0.16440+-0.02680
+
+
+# siam triplet, m = 0.5 (max)
+# albert-base lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 8
+Accuracy: 0.67648+-0.02560
+F1: 0.79662+-0.02005
+Best threshold: 0.29460+-0.03582
+
+Epoch: 9
+Accuracy: 0.67821+-0.03302
+F1: 0.79327+-0.02659
+Best threshold: 0.23040+-0.00120
+
+Epoch: 30
+Accuracy: 0.66606+-0.02544
+F1: 0.78023+-0.02023
+Best threshold: 0.17510+-0.01607
 
 
 # semi-siam
 # albert-base with head_pretraining(10 epochs, lr=0.0005), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9, v, w, |v - w|, v*w, logistic regression
+Epoch: 24
+Accuracy: 0.76924+-0.03106
+F1: 0.84305+-0.02455
+Best threshold: 0.34360+-0.00474
+
+Epoch: 30
+Accuracy: 0.76058+-0.02832
+F1: 0.83331+-0.02448
+Best threshold: 0.44280+-0.00098
+
+
+# semi-siam (mean)
+# albert-base with head_pretraining(10 epochs, lr=0.0005), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9, v, w, |v - w|, v*w, logistic regression
+Epoch: 29
+Accuracy: 0.77039+-0.02649
+F1: 0.83671+-0.02198
+Best threshold: 0.41660+-0.00120
+
+Epoch: 30
+Accuracy: 0.76402+-0.02532
+F1: 0.82912+-0.02211
+Best threshold: 0.62410+-0.02447
+
+
+# semi-siam (max)
+# albert-base with head_pretraining(10 epochs, lr=0.0005), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9, v, w, |v - w|, v*w, logistic regression
 Epoch:
+didn't converge
+
 
 ####################
 # baseline cos_dist for my albert-base-pretrained
@@ -489,18 +585,40 @@ F1: 0.79886+-0.02791
 Best threshold: 0.07930+-0.00287
 
 # siam, m = 0.5
-# my albert-base-pretrained, lr=0.0005, nesterov, weight_decay=0.01, momentum=0.9
-Epoch:
+# my albert-base-pretrained, lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 2
+Accuracy: 0.73041+-0.02993
+F1: 0.82161+-0.02437
+Best threshold: 0.06960+-0.00080
 
+Epoch: 30
+Accuracy: 0.72635+-0.02410
+F1: 0.81566+-0.01925
+Best threshold: 0.16810+-0.00324
 
 # siam triplet, m = 0.5
-# my albert-base-pretrained lr=0.0005, nesterov, weight_decay=0.01, momentum=0.9
-Epoch:
+# my albert-base-pretrained lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 7
+Accuracy: 0.72402+-0.02446
+F1: 0.81882+-0.01856
+Best threshold: 0.32100+-0.00000
 
+Epoch: 30
+Accuracy: 0.66836+-0.03550
+F1: 0.79932+-0.02537
+Best threshold: 0.00200+-0.00000
 
 # semi-siam
 # my albert-base-pretrained with head_pretraining(10 epochs, lr=0.0005), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9, v, w, |v - w|, v*w, logistic regression
-Epoch:
+Epoch: 24
+Accuracy: 0.77853+-0.02675
+F1: 0.84334+-0.02371
+Best threshold: 0.35030+-0.00283
+
+Epoch: 30
+Accuracy: 0.77447+-0.02667
+F1: 0.82944+-0.02554
+Best threshold: 0.55600+-0.05389
 
 ########### ROBERTA ###############
 # roberta-base
@@ -607,16 +725,51 @@ F1: 0.79718+-0.02240
 Best threshold: 0.00570+-0.00046
 
 # siam, m = 0.5
-# roberta-base, lr=0.0001, nesterov, weight_decay=0.01, momentum=0.9
-Epoch:
+# roberta-base, lr=0.0005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 29
+Accuracy: 0.66604+-0.03438
+F1: 0.79867+-0.02440
+Best threshold: 0.12780+-0.00660
+
+Epoch: 30
+Accuracy: 0.66139+-0.03620
+F1: 0.79545+-0.02641
+Best threshold: 0.18550+-0.07740
+
 
 # siam triplet, m = 0.5
 # roberta-base lr=0.0005, nesterov, weight_decay=0.01, momentum=0.9
-Epoch:
+Epoch: 27
+Accuracy: 0.71998+-0.02320
+F1: 0.81231+-0.01807
+Best threshold: 0.35300+-0.00000
+
+Epoch: 30
+Accuracy: 0.71129+-0.02207
+F1: 0.80532+-0.01832
+Best threshold: 0.35040+-0.01260
 
 # semi-siam
-# roberta-base with head_pretraining(10 epochs, lr=0.0005), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9, v, w, |v - w|, v*w, logistic regression
-Epoch:
+# roberta-base with head_pretraining(10 epochs, lr=0.0001), lr=0.0005, nesterov, weight_decay=0.01, momentum=0.9, v, w, |v - w|, v*w, logistic regression
+Epoch: 22
+Accuracy: 0.80110+-0.02846
+F1: 0.86207+-0.02420
+Best threshold: 0.40820+-0.00240
+
+Epoch: 25
+Accuracy: 0.80867+-0.03452
+F1: 0.86012+-0.02727
+Best threshold: 0.59640+-0.02836
+
+Epoch: 27
+Accuracy: 0.80636+-0.02124
+F1: 0.86095+-0.01815
+Best threshold: 0.45660+-0.02143
+
+Epoch: 30
+Accuracy: 0.80401+-0.03360
+F1: 0.85778+-0.02832
+Best threshold: 0.45100+-0.01963
 
 ####################
 # baseline cos_dist for my roberta-base-pretrained
@@ -632,13 +785,39 @@ F1: 0.79649+-0.02469
 Best threshold: 0.06630+-0.00494
 
 
+# siam, m = 0.5
+# my roberta-base-pretrained, lr=0.0005, nesterov, weight_decay=0.01, momentum=0.9
+Epoch: 3
+Accuracy: 0.66719+-0.03621
+F1: 0.79880+-0.02546
+Best threshold: 0.05230+-0.00090
+
+Epoch: 30
+Accuracy: 0.66488+-0.03304
+F1: 0.79766+-0.02394
+Best threshold: 0.02720+-0.00183
+
+
+
 # siam triplet, m = 0.5
 # my roberta-base-pretrained lr=0.0005, nesterov, weight_decay=0.01, momentum=0.9
-Epoch:
+Epoch: 15
+Accuracy: 0.72462+-0.01933
+F1: 0.81663+-0.01645
+Best threshold: 0.34660+-0.00180
+
+Epoch: 30
+Accuracy: 0.71826+-0.02242
+F1: 0.79932+-0.01807
+Best threshold: 0.29520+-0.00328
 
 
 # semi-siam
-# my roberta-base-pretrained with head_pretraining(10 epochs, lr=0.0005), lr=0.00005, nesterov, weight_decay=0.01, momentum=0.9, v, w, |v - w|, v*w, logistic regression
-Epoch:
+# my roberta-base-pretrained with head_pretraining(10 epochs, lr=0.00001), lr=0.0005, nesterov, weight_decay=0.01, momentum=0.9, v, w, |v - w|, v*w, logistic regression
+Epoch: 30
+Accuracy: 0.79766+-0.02677
+F1: 0.85460+-0.02202
+Best threshold: 0.50600+-0.00000
+
 
 

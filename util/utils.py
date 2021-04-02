@@ -15,7 +15,7 @@ def masked_aggregation(batch, mask, func="CLS"):
         # print(batch_res.shape)
     elif func == "max":
         # batch_res = batch_zero.max(dim=1)
-        batch_res, _ = torch.max(batch_zero[:, 1:], dim=1, keepdim=True)
+        batch_res, _ = torch.max(batch_zero[:, 1:], dim=1, keepdim=False)
     elif func == "CLS":
         batch_res = batch[:, 0]
     else:

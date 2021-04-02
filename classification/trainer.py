@@ -43,7 +43,7 @@ class MyTrainer:
         # self.evaluate_softmax = True if self.model.output_size == 2 else False
         self.device = torch.device("cuda")
 
-        self.model = torch.load("/home/ihor/University/DiplomaProject/Program/models/albert_base_v2_cls20210401-155540.pt")
+        self.model = torch.load("/home/ihor/University/DiplomaProject/Program/models/roberta_base_cls_20210401-180654.pt")
         self.model.attach_head("siam")
         self.model.to(self.device)
 
@@ -170,7 +170,7 @@ class MyTrainer:
             self.evaluate()
 
         date_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        model_path = "/home/ihor/University/DiplomaProject/Program/models/roberta_base_finetuned_siam" + date_time + ".pt"
+        model_path = "/home/ihor/University/DiplomaProject/Program/models/roberta_base_finetuned_siam_" + date_time + ".pt"
         torch.save(self.model, model_path)
 
     def finetune_mode(self, init_epochs, epoch):
