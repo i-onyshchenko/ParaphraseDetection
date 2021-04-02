@@ -2,19 +2,20 @@ import torch
 import numpy as np
 
 
-def masked_aggregation(batch, mask, func="mean"):
+def masked_aggregation(batch, mask, func="CLS"):
     # print("Batch shape: {}".format(batch.shape))
     # print("Mask shape: {}".format(mask.shape))
     batch_zero = batch * mask.unsqueeze(dim=-1)
 
     if func == "mean":
-        lens = mask.sum(dim=1)
+        # skip CLS token
+        lens = mask.sum(dim=1) - 1
         # print(lens.shape)
-        batch_res = batch_zero.sum(dim=1) / lens.unsqueeze(dim=-1)
+        batch_res = batch_zero[:, 1:].sum(dim=1) / lens.unsqueeze(dim=-1)
         # print(batch_res.shape)
     elif func == "max":
         # batch_res = batch_zero.max(dim=1)
-        batch_res, _ = torch.max(batch_zero, dim=1, keepdim=True)
+        batch_res, _ = torch.max(batch_zero[:, 1:], dim=1, keepdim=True)
     elif func == "CLS":
         batch_res = batch[:, 0]
     else:
